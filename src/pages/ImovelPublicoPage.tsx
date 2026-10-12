@@ -120,8 +120,11 @@ export const ImovelPublicoPage: React.FC = () => {
         addViewed(data.code)
 
         // Busca slots de visita
-        const backendUrl = (import.meta.env.VITE_POCKETBASE_URL || '').replace(/\/$/, '')
-        fetch(`${backendUrl}/backend/v1/public/properties/${encodeURIComponent(data.code)}/slots`)
+        const backendUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+        const orgSlug = encodeURIComponent(String(import.meta.env.VITE_ORG_SLUG || ''))
+        fetch(
+          `${backendUrl}/backend/v1/public/properties/${encodeURIComponent(data.code)}/slots?org=${orgSlug}`,
+        )
           .then((res) => (res.ok ? res.json() : null))
           .then((slotsData) => {
             if (slotsData && Array.isArray(slotsData.slots)) {
