@@ -205,12 +205,12 @@ export const BuscarPage: React.FC = () => {
   // Verifica se há busca ativa (filtros além da finalidade padrão)
   const isSearchActive = Boolean(
     currentFilters.type ||
-      currentFilters.neighborhood ||
-      currentFilters.bedrooms ||
-      currentFilters.parking ||
-      currentFilters.min_price ||
-      currentFilters.max_price ||
-      (currentFilters.sort && currentFilters.sort !== 'recent'),
+    currentFilters.neighborhood ||
+    currentFilters.bedrooms ||
+    currentFilters.parking ||
+    currentFilters.min_price ||
+    currentFilters.max_price ||
+    (currentFilters.sort && currentFilters.sort !== 'recent'),
   )
 
   // Observa rolagem para exibir barra compacta quando rolar abaixo do hero com busca ativa
@@ -255,12 +255,12 @@ export const BuscarPage: React.FC = () => {
       // Verifica se a busca é ativa com esses novos valores
       const willBeSearchActive = Boolean(
         newValues.type ||
-          newValues.neighborhood ||
-          newValues.bedrooms ||
-          newValues.parking ||
-          newValues.min_price ||
-          newValues.max_price ||
-          (newValues.sort && newValues.sort !== 'recent'),
+        newValues.neighborhood ||
+        newValues.bedrooms ||
+        newValues.parking ||
+        newValues.min_price ||
+        newValues.max_price ||
+        (newValues.sort && newValues.sort !== 'recent'),
       )
 
       setTimeout(() => {
