@@ -100,6 +100,7 @@ export interface SubmitLeadPayload {
   consent: true
   submission_id: string
   property_code?: string
+  visit_start?: string
   search?: SubmitLeadSearch
   utm_source?: string
   utm_medium?: string
@@ -112,6 +113,7 @@ export interface SubmitLeadPayload {
 export interface SubmitLeadResponse {
   ok: boolean
   whatsapp_url: string | null
+  visit?: 'requested' | 'slot_taken' | 'invalid' | 'limit' | 'none' | string
 }
 
 // O site é um projeto separado: lê o servidor do sistema (VITE_API_BASE_URL)
@@ -219,6 +221,9 @@ export async function submitLead(payload: SubmitLeadPayload): Promise<SubmitLead
   }
   if (payload.property_code && payload.property_code.trim()) {
     body.property_code = payload.property_code.trim()
+  }
+  if (payload.visit_start && payload.visit_start.trim()) {
+    body.visit_start = payload.visit_start.trim()
   }
   if (payload.search) {
     body.search = payload.search

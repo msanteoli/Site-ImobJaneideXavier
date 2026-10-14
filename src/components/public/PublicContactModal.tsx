@@ -4,6 +4,7 @@ import { snapshot } from '@/lib/searchMemory'
 import { getCampaign } from '@/lib/campaign'
 import { trackLead, trackWhatsapp } from '@/lib/marketing'
 import { maskPhoneInput } from '@/lib/clientUtils'
+import { formatVisitSlot } from '@/lib/publicSiteUtils'
 import { useIsMobile } from '@/hooks/use-mobile'
 import {
   Dialog,
@@ -23,18 +24,24 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { AlertCircle, CheckCircle2, MessageCircle } from 'lucide-react'
+import { AlertCircle, CheckCircle2, MessageCircle, Calendar } from 'lucide-react'
 
 interface PublicContactModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   propertyCode?: string
+  visitStart?: string
+  onSubmitted?: () => void
+  onChooseOtherSlot?: () => void
 }
 
 export const PublicContactModal: React.FC<PublicContactModalProps> = ({
   open,
   onOpenChange,
   propertyCode,
+  visitStart,
+  onSubmitted,
+  onChooseOtherSlot,
 }) => {
   const isMobile = useIsMobile()
 
@@ -49,12 +56,16 @@ export const PublicContactModal: React.FC<PublicContactModalProps> = ({
   const [submissionId, setSubmissionId] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
   const [consentError, setConsentError] = useState(false)
   const [successResponse, setSuccessResponse] = useState<{
     whatsapp_url: string | null
+    visit?: string
+    visitStartFormatted?: string
   } | null>(null)
 
   const consentCheckboxRef = useRef<HTMLButtonElement>(null)
+  const emailInputRef = useRef<HTMLInputElement>(null)
 
   // Quando o modal abre, gera um submissionId UMA vez se não houver um ativo para este fluxo
   useEffect(() => {
@@ -63,6 +74,7 @@ export const PublicContactModal: React.FC<PublicContactModalProps> = ({
         setSubmissionId(crypto.randomUUID())
       }
       setConsentError(false)
+      setEmailError(null)
       setServerError(null)
       // Se já estava com sucesso e abriu de novo, reseta tudo
       if (successResponse) {
@@ -81,9 +93,32 @@ export const PublicContactModal: React.FC<PublicContactModalProps> = ({
     setPhone(maskPhoneInput(raw))
   }
 
+  const validateEmail = (val: string): string | null => {
+    const trimmed = val.trim()
+    if (!trimmed) {
+      return 'Informe o seu e-mail.'
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(trimmed)) {
+      return 'Informe um e-mail válido.'
+    }
+    return null
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setServerError(null)
+
+    // Validação de e-mail obrigatório
+    const mailErr = validateEmail(email)
+    if (mailErr) {
+      setEmailError(mailErr)
+      if (emailInputRef.current) {
+        emailInputRef.current.focus()
+      }
+      return
+    }
+    setEmailError(null)
 
     if (!consent) {
       setConsentError(true)
@@ -102,10 +137,11 @@ export const PublicContactModal: React.FC<PublicContactModalProps> = ({
       const res = await submitLead({
         name,
         phone,
-        email: email.trim() || undefined,
+        email: email.trim(),
         consent: true,
         submission_id: submissionId,
         property_code: propertyCode || undefined,
+        visit_start: visitStart && visitStart.trim() ? visitStart.trim() : undefined,
         search: {
           filters: memorySnap.filters,
           viewed: memorySnap.viewed,
@@ -121,9 +157,18 @@ export const PublicContactModal: React.FC<PublicContactModalProps> = ({
       // Conversão Lead
       trackLead(propertyCode)
 
+      const formattedSlot = visitStart ? formatVisitSlot(visitStart) : undefined
+
       setSuccessResponse({
         whatsapp_url: res.whatsapp_url,
+        visit: res.visit,
+        visitStartFormatted: formattedSlot,
       })
+
+      // Notifica o componente pai para recarregar horários da ficha após qualquer envio
+      if (onSubmitted) {
+        onSubmitted()
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro ao enviar contato.'
       setServerError(msg)
@@ -142,6 +187,63 @@ export const PublicContactModal: React.FC<PublicContactModalProps> = ({
     onOpenChange(false)
   }
 
+  const handleChooseOtherSlot = () => {
+    onOpenChange(false)
+    if (onChooseOtherSlot) {
+      onChooseOtherSlot()
+    }
+  }
+
+  const formattedVisitStart = visitStart ? formatVisitSlot(visitStart) : null
+
+  // Monta a mensagem de sucesso conforme o valor de visit retornado pelo servidor
+  const renderSuccessMessage = () => {
+    const visitStatus = successResponse?.visit
+    const timeFormatted =
+      successResponse?.visitStartFormatted || (visitStart ? formatVisitSlot(visitStart) : '')
+
+    if (visitStatus === 'requested') {
+      return (
+        <p className="text-sm text-muted-foreground max-w-sm">
+          Pedimos a visita para {timeFormatted}. O corretor vai entrar em contato para confirmar.
+        </p>
+      )
+    }
+
+    if (visitStatus === 'slot_taken') {
+      return (
+        <p className="text-sm text-muted-foreground max-w-sm">
+          Esse horário acabou de ser pedido por outra pessoa. Recebemos o seu contato e vamos
+          combinar outro horário com você.
+        </p>
+      )
+    }
+
+    if (visitStatus === 'invalid') {
+      return (
+        <p className="text-sm text-muted-foreground max-w-sm">
+          Não foi possível pedir esse horário. Recebemos o seu contato e vamos combinar a visita com
+          você.
+        </p>
+      )
+    }
+
+    if (visitStatus === 'limit') {
+      return (
+        <p className="text-sm text-muted-foreground max-w-sm">
+          Você já tem um pedido de visita em andamento. Recebemos o seu contato.
+        </p>
+      )
+    }
+
+    // 'none' ou ausente / sem horário
+    return (
+      <p className="text-sm text-muted-foreground max-w-sm">
+        Recebemos o seu pedido. Um atendente entra em contato em até 1 hora.
+      </p>
+    )
+  }
+
   const formContent = (
     <div>
       {successResponse ? (
@@ -152,11 +254,18 @@ export const PublicContactModal: React.FC<PublicContactModalProps> = ({
           <h3 className="text-xl font-semibold text-foreground tracking-tight">
             Recebemos o seu contato. Em breve falaremos com você.
           </h3>
-          <p className="text-sm text-muted-foreground max-w-sm">
-            Nossa equipe entrará em contato para tirar suas dúvidas e prestar o melhor atendimento.
-          </p>
+          {renderSuccessMessage()}
 
           <div className="w-full pt-4 space-y-3">
+            {successResponse.visit === 'slot_taken' && (
+              <Button
+                type="button"
+                className="w-full rounded-[8px] h-12 min-h-[48px] font-medium"
+                onClick={handleChooseOtherSlot}
+              >
+                Escolher outro horário
+              </Button>
+            )}
             {successResponse.whatsapp_url && (
               <Button
                 type="button"
@@ -203,6 +312,16 @@ export const PublicContactModal: React.FC<PublicContactModalProps> = ({
             />
           </div>
 
+          {/* Horário de visita pedido (quando visitStart estiver preenchida) */}
+          {formattedVisitStart && (
+            <div className="p-3 rounded-[8px] bg-primary/10 border border-primary/20 flex items-center gap-2.5 text-xs font-medium text-foreground">
+              <Calendar className="h-4 w-4 text-primary shrink-0" />
+              <span>
+                Visita pedida: <strong>{formattedVisitStart}</strong>
+              </span>
+            </div>
+          )}
+
           {/* Nome */}
           <div className="space-y-1.5 text-left">
             <Label htmlFor="lead-name" className="text-[13px] font-medium text-foreground">
@@ -237,20 +356,33 @@ export const PublicContactModal: React.FC<PublicContactModalProps> = ({
             />
           </div>
 
-          {/* E-mail */}
+          {/* E-mail (obrigatório) */}
           <div className="space-y-1.5 text-left">
             <Label htmlFor="lead-email" className="text-[13px] font-medium text-foreground">
-              E-mail (opcional)
+              E-mail <span className="text-destructive">*</span>
             </Label>
             <Input
               id="lead-email"
+              ref={emailInputRef}
               type="email"
+              required
               placeholder="seuemail@exemplo.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                if (emailError) setEmailError(null)
+              }}
               disabled={loading}
-              className="h-12 rounded-[8px] border-border bg-background text-sm"
+              className={`h-12 rounded-[8px] bg-background text-sm ${
+                emailError ? 'border-destructive focus-visible:ring-destructive' : 'border-border'
+              }`}
             />
+            {emailError && (
+              <p className="text-xs text-destructive font-medium flex items-center gap-1.5 pt-0.5">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{emailError}</span>
+              </p>
+            )}
           </div>
 
           {/* Autorização de contato */}

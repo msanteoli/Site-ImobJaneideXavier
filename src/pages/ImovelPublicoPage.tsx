@@ -101,6 +101,37 @@ export const ImovelPublicoPage: React.FC = () => {
       })
   }, [])
 
+  // Função para recarregar horários de visita da ficha
+  const reloadSlots = React.useCallback(
+    async (propCode?: string) => {
+      const targetCode = propCode || property?.code || codigo
+      if (!targetCode) return
+
+      const backendUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+      const orgSlug = encodeURIComponent(String(import.meta.env.VITE_ORG_SLUG || ''))
+      try {
+        const res = await fetch(
+          `${backendUrl}/backend/v1/public/properties/${encodeURIComponent(targetCode)}/slots?org=${orgSlug}`,
+        )
+        if (res.ok) {
+          const slotsData = await res.json()
+          if (slotsData && Array.isArray(slotsData.slots)) {
+            setSlots(slotsData.slots)
+            // Se o horário atualmente selecionado sumiu da lista, desmarca
+            setSelectedSlotStart((prev) => {
+              if (!prev) return null
+              const exists = slotsData.slots.some((s: { start: string }) => s.start === prev)
+              return exists ? prev : null
+            })
+          }
+        }
+      } catch {
+        // slots são opcionais caso dê erro
+      }
+    },
+    [property?.code, codigo],
+  )
+
   // Carrega imóvel
   useEffect(() => {
     if (!codigo) {
@@ -120,20 +151,7 @@ export const ImovelPublicoPage: React.FC = () => {
         addViewed(data.code)
 
         // Busca slots de visita
-        const backendUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-        const orgSlug = encodeURIComponent(String(import.meta.env.VITE_ORG_SLUG || ''))
-        fetch(
-          `${backendUrl}/backend/v1/public/properties/${encodeURIComponent(data.code)}/slots?org=${orgSlug}`,
-        )
-          .then((res) => (res.ok ? res.json() : null))
-          .then((slotsData) => {
-            if (slotsData && Array.isArray(slotsData.slots)) {
-              setSlots(slotsData.slots)
-            }
-          })
-          .catch(() => {
-            // slots são opcionais caso dê erro
-          })
+        reloadSlots(data.code)
       })
       .catch((err: unknown) => {
         const status = (err as { status?: number })?.status
@@ -147,7 +165,7 @@ export const ImovelPublicoPage: React.FC = () => {
       .finally(() => {
         setLoading(false)
       })
-  }, [codigo])
+  }, [codigo, reloadSlots])
 
   // Agrupamento de horários por dia (faixa horizontal de dias + horários do dia em 2 colunas)
   const dayGroups: DayGroup[] = useMemo(() => {
@@ -159,16 +177,33 @@ export const ImovelPublicoPage: React.FC = () => {
     for (const slot of slots) {
       try {
         const d = new Date(slot.start)
-        const year = d.getFullYear()
-        const month = String(d.getMonth() + 1).padStart(2, '0')
-        const day = String(d.getDate()).padStart(2, '0')
+        const formatter = new Intl.DateTimeFormat('pt-BR', {
+          timeZone: 'America/Bahia',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          weekday: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })
+        const parts = formatter.formatToParts(d)
+        const pMap: Record<string, string> = {}
+        for (const p of parts) {
+          pMap[p.type] = p.value
+        }
+
+        const year = pMap.year || String(d.getFullYear())
+        const month = pMap.month || String(d.getMonth() + 1).padStart(2, '0')
+        const day = pMap.day || String(d.getDate()).padStart(2, '0')
         const dateKey = `${year}-${month}-${day}`
 
-        const diaSemana = dias[d.getDay()]
+        const weekdayClean = (pMap.weekday || '').replace('.', '').toLowerCase()
+        const diaSemana = weekdayClean || dias[d.getDay()]
         const dayLabel = `${diaSemana} ${day}/${month}`
 
-        const hour = String(d.getHours()).padStart(2, '0')
-        const min = String(d.getMinutes()).padStart(2, '0')
+        const hour = pMap.hour || String(d.getHours()).padStart(2, '0')
+        const min = pMap.minute || String(d.getMinutes()).padStart(2, '0')
         const timeLabel = `${hour}:${min}`
 
         if (!map.has(dateKey)) {
@@ -836,6 +871,14 @@ export const ImovelPublicoPage: React.FC = () => {
           open={contactOpen}
           onOpenChange={setContactOpen}
           propertyCode={property.code}
+          visitStart={selectedSlotStart || undefined}
+          onSubmitted={() => {
+            reloadSlots()
+          }}
+          onChooseOtherSlot={() => {
+            setSelectedSlotStart(null)
+            reloadSlots()
+          }}
         />
       </div>
     </PublicLayout>

@@ -63,3 +63,47 @@ export function buildSpecsSummary(props: {
 
   return parts.join(' · ')
 }
+
+/**
+ * Formata um horário de visita (ISO string) no horário da Bahia (UTC-3),
+ * no formato usado na ficha do imóvel: "qui 08/10 às 14:00" ou similar.
+ * Se apenas a data for necessária, usa "qui 08/10".
+ */
+export function formatVisitSlot(isoString?: string | null): string {
+  if (!isoString) return ''
+  try {
+    const d = new Date(isoString)
+    if (isNaN(d.getTime())) return String(isoString)
+
+    const dias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+
+    // Considera UTC-3 (Bahia / horário de Brasília sem horário de verão)
+    const formatter = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Bahia',
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+
+    const parts = formatter.formatToParts(d)
+    const partMap: Record<string, string> = {}
+    for (const p of parts) {
+      partMap[p.type] = p.value
+    }
+
+    const weekdayShort = (partMap.weekday || '').replace('.', '').toLowerCase()
+    const day = partMap.day || ''
+    const month = partMap.month || ''
+    const hour = partMap.hour || ''
+    const minute = partMap.minute || ''
+
+    const diaLabel = weekdayShort || dias[d.getDay()] || ''
+
+    return `${diaLabel} ${day}/${month} às ${hour}:${minute}`
+  } catch {
+    return String(isoString)
+  }
+}
