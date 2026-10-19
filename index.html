@@ -20,19 +20,8 @@
     <script>
       (function() {
         try {
-          var key = 'imobdigital-theme';
-          var stored = localStorage.getItem(key);
-          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (stored === 'dark' || (!stored && prefersDark) || (stored === 'auto' && prefersDark)) {
-            document.documentElement.classList.add('dark');
-          } else {
-            document.documentElement.classList.remove('dark');
-          }
-        } catch (e) {
-          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.classList.add('dark');
-          }
-        }
+          document.documentElement.classList.remove('dark');
+        } catch (e) {}
       })();
     </script>
   </head>

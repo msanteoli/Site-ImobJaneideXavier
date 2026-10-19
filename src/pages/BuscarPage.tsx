@@ -3,18 +3,27 @@ import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import {
   getFilters,
   searchProperties,
+  getSiteBanners,
+  getSiteHighlights,
+  getSiteConfig,
+  getSiteMapCounts,
   PublicFiltersResponse,
   PublicPropertyListItem,
+  PublicBannerItem,
+  PublicHighlightItem,
+  PublicSiteConfig,
+  PublicMapCount,
 } from '@/services/publicSite'
 import { PUBLIC_PROPERTY_TYPE_LABELS } from '@/lib/publicSiteUtils'
 import { setFilters as saveFiltersToMemory } from '@/lib/searchMemory'
 import { initCampaignFromUrl } from '@/lib/campaign'
 import { initMarketingScripts } from '@/lib/marketing'
-import { useAuth } from '@/contexts/AuthContext'
 import { PublicLayout } from '@/components/public/PublicLayout'
 import { PropertyCard } from '@/components/public/PropertyCard'
-import { HeroSearchCard } from '@/components/public/HeroSearchCard'
-import { FeaturedSlider } from '@/components/public/FeaturedSlider'
+import { HeroBannerCarousel } from '@/components/public/HeroBannerCarousel'
+import { HighlightsSlider } from '@/components/public/HighlightsSlider'
+import { SobreSection } from '@/components/public/SobreSection'
+import { FeiraBairrosMap } from '@/components/public/FeiraBairrosMap'
 import { CompactSearchBar } from '@/components/public/CompactSearchBar'
 import { Enter } from '@/components/public/Enter'
 import { SearchFilterBar, FilterValues } from '@/components/public/SearchFilterBar'
@@ -25,25 +34,17 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { AlertCircle, RotateCcw, X, MessageSquare } from 'lucide-react'
 
 export const BuscarPage: React.FC = () => {
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
-  const navigate = useNavigate()
-  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
-
-  // Se o usuário está em "/" e autenticado, redireciona para "/hoje"
-  useEffect(() => {
-    if (location.pathname === '/' && !authLoading && isAuthenticated) {
-      navigate('/hoje', { replace: true })
-    }
-  }, [location.pathname, authLoading, isAuthenticated, navigate])
 
   // Filtros dinâmicos obtidos de /public/filters
   const [filterMeta, setFilterMeta] = useState<PublicFiltersResponse | null>(null)
-  const [metaError, setMetaError] = useState<string | null>(null)
+  const [, setMetaError] = useState<string | null>(null)
 
-  // Imóveis em destaque para o slide do hero (searchProperties sort 'recent', per_page 8, até 5 com capa)
-  const [featuredProperties, setFeaturedProperties] = useState<PublicPropertyListItem[]>([])
-  const [featuredLoading, setFeaturedLoading] = useState(true)
+  // Dados v2: Banners da Hero, Destaques, Config e Mapa
+  const [banners, setBanners] = useState<PublicBannerItem[]>([])
+  const [highlights, setHighlights] = useState<PublicHighlightItem[]>([])
+  const [siteConfig, setSiteConfig] = useState<PublicSiteConfig | null>(null)
+  const [mapCounts, setMapCounts] = useState<PublicMapCount[]>([])
 
   // Lista de imóveis e paginação da grade
   const [items, setItems] = useState<PublicPropertyListItem[]>([])
@@ -107,44 +108,46 @@ export const BuscarPage: React.FC = () => {
     initMarketingScripts()
   }, [])
 
-  // Carrega opções de filtros
+  // Carrega opções de filtros e dados da v2
   useEffect(() => {
     let mounted = true
+
     getFilters()
       .then((data) => {
-        if (mounted) {
-          setFilterMeta(data)
-        }
+        if (mounted) setFilterMeta(data)
       })
       .catch((err) => {
-        if (mounted) {
-          setMetaError(err.message || 'Erro ao carregar opções.')
-        }
+        if (mounted) setMetaError(err.message || 'Erro ao carregar opções.')
       })
-    return () => {
-      mounted = false
-    }
-  }, [])
 
-  // Carrega destaques do slider: searchProperties sort 'recent', per_page 8, até 5 com capa
-  useEffect(() => {
-    let mounted = true
-    setFeaturedLoading(true)
-    searchProperties({
-      sort: 'recent',
-      per_page: 8,
-    })
-      .then((res) => {
-        if (!mounted) return
-        const withCover = res.items.filter((p) => Boolean(p.cover)).slice(0, 5)
-        setFeaturedProperties(withCover)
+    getSiteBanners()
+      .then((data) => {
+        if (mounted) setBanners(data)
       })
       .catch(() => {
-        // slider vazio é tratado escondendo o slide e centralizando a busca
+        if (mounted) setBanners([])
       })
-      .finally(() => {
-        if (mounted) setFeaturedLoading(false)
+
+    getSiteHighlights()
+      .then((data) => {
+        if (mounted) setHighlights(data)
       })
+      .catch(() => {
+        if (mounted) setHighlights([])
+      })
+
+    getSiteConfig()
+      .then((data) => {
+        if (mounted && data) setSiteConfig(data)
+      })
+      .catch(() => {})
+
+    getSiteMapCounts()
+      .then((data) => {
+        if (mounted) setMapCounts(data)
+      })
+      .catch(() => {})
+
     return () => {
       mounted = false
     }
@@ -352,47 +355,6 @@ export const BuscarPage: React.FC = () => {
     }
   }
 
-  // Se o visitante acessou / e o auth ainda está carregando, mostra o esqueleto
-  if (location.pathname === '/' && authLoading) {
-    return (
-      <PublicLayout
-        orgName={orgName}
-        whatsappEnabled={filterMeta?.organization?.whatsapp_enabled}
-        showContactButton={true}
-      >
-        <div className="w-full bg-muted py-8 sm:py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              <div className="lg:col-span-7 bg-card rounded-[24px] p-6 sm:p-8 space-y-4">
-                <Skeleton className="h-12 w-3/4 rounded-[8px]" />
-                <Skeleton className="h-6 w-1/2 rounded-[8px]" />
-                <Skeleton className="h-14 w-full rounded-full mt-4" />
-                <div className="flex gap-2 pt-2">
-                  <Skeleton className="h-10 w-24 rounded-full" />
-                  <Skeleton className="h-10 w-24 rounded-full" />
-                </div>
-              </div>
-              <div className="lg:col-span-5 hidden lg:block">
-                <Skeleton className="aspect-[4/3] w-full rounded-[24px]" />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="space-y-3">
-                <Skeleton className="aspect-[4/3] w-full rounded-[12px]" />
-                <Skeleton className="h-5 w-3/4 rounded-[8px]" />
-                <Skeleton className="h-4 w-1/2 rounded-[8px]" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </PublicLayout>
-    )
-  }
-
   // Gera a lista de chips de filtros ativos
   interface ActiveChip {
     id: keyof FilterValues
@@ -442,9 +404,6 @@ export const BuscarPage: React.FC = () => {
     })
   }
 
-  const hasFeatured = featuredProperties.length > 0
-  const showTwoColumns = featuredLoading || hasFeatured
-
   return (
     <PublicLayout
       orgName={orgName}
@@ -452,64 +411,34 @@ export const BuscarPage: React.FC = () => {
       showContactButton={true}
       onSelectPurpose={(p) => {
         handleFiltersChange({ ...currentFilters, purpose: p }, false)
-        const heroEl = document.getElementById('hero-search-card')
+        const heroEl = document.getElementById('hero-banner-section')
         if (heroEl) {
           heroEl.scrollIntoView({ behavior: 'smooth' })
         }
       }}
       onOpenContact={() => setContactOpen(true)}
     >
-      {/* 3) ÁREA DE DESTAQUE (HERO): largura total, cerca de 520 px no desktop, fundo muted */}
-      <section
-        ref={heroRef}
-        aria-label="Destaque da página inicial"
-        className="w-full bg-muted py-6 sm:py-8 lg:py-12 border-b border-border overflow-hidden"
-      >
-        <div key={location.pathname} className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div
-            className={
-              showTwoColumns
-                ? 'grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center'
-                : 'max-w-[720px] mx-auto'
-            }
-          >
-            {/* Cartão de busca: NUNCA desmonta, permanece na mesma posição da árvore */}
-            <div className={showTwoColumns ? 'lg:col-span-7 w-full flex items-center' : 'w-full'}>
-              <HeroSearchCard
-                values={currentFilters}
-                neighborhoods={filterMeta?.neighborhoods || []}
-                types={filterMeta?.types || []}
-                onSearch={(newVals) => handleFiltersChange(newVals, true)}
-                onOpenMoreFilters={() => setMoreFiltersOpen(true)}
-              />
-            </div>
+      {/* 1. HERO COM BANNERS DE LANÇAMENTO E CAIXA DE BUSCA SOBREPOSTA */}
+      <div ref={heroRef}>
+        <HeroBannerCarousel
+          banners={banners}
+          values={currentFilters}
+          neighborhoods={filterMeta?.neighborhoods || []}
+          types={filterMeta?.types || []}
+          onSearch={(newVals) => handleFiltersChange(newVals, true)}
+          onOpenMoreFilters={() => setMoreFiltersOpen(true)}
+        />
+      </div>
 
-            {/* Slide de destaques (ou esqueleto enquanto carrega) */}
-            {showTwoColumns && (
-              <div className="lg:col-span-5 w-full flex items-center justify-center">
-                {featuredLoading ? (
-                  /* Esqueleto reservando a vaga do slide: desktop à direita, celular abaixo do cartão */
-                  <div className="w-full">
-                    <Skeleton className="aspect-[4/3] max-h-[300px] md:aspect-auto md:h-[360px] md:max-h-none lg:aspect-[4/3] lg:h-auto w-full rounded-[16px] lg:rounded-[24px]" />
-                  </div>
-                ) : (
-                  /* Slide com classe de entrada normal no passo 2 */
-                  <Enter step={2} className="w-full">
-                    <FeaturedSlider properties={featuredProperties} />
-                  </Enter>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+      {/* 2. SLIDE DE DESTAQUES (até 10 cartões padronizados, com fallback) */}
+      <HighlightsSlider highlights={highlights} fallbackProperties={items} />
 
-      {/* Barra de busca compacta fixa logo abaixo do cabeçalho quando rolar com busca ativa (não anima) */}
+      {/* Barra de busca compacta fixa logo abaixo do cabeçalho quando rolar com busca ativa */}
       {showCompactBar && (
         <CompactSearchBar
           values={currentFilters}
           onAlterarClick={() => {
-            const heroEl = document.getElementById('hero-search-card')
+            const heroEl = document.getElementById('hero-banner-section')
             if (heroEl) {
               heroEl.scrollIntoView({ behavior: 'smooth' })
             }
@@ -517,8 +446,16 @@ export const BuscarPage: React.FC = () => {
         />
       )}
 
-      {/* 6) CATEGORIAS E RESULTADOS: faixa de categorias com 44 px de altura. Passo 5 da entrada (no contêiner de fora) */}
-      <Enter key={`cat-${location.pathname}`} step={5}>
+      {/* 4. MAPA DE FEIRA DE SANTANA (condicionado a GeoJSON existente) */}
+      <FeiraBairrosMap
+        mapCounts={mapCounts}
+        onSelectNeighborhood={(bairro) => {
+          handleFiltersChange({ ...currentFilters, neighborhood: bairro }, true)
+        }}
+      />
+
+      {/* Categorias */}
+      <Enter key="cat-bar" step={5}>
         <CategoryBar
           types={filterMeta?.types || []}
           selectedType={currentFilters.type}
@@ -663,6 +600,9 @@ export const BuscarPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* 3. SEÇÃO SOBRE A IMOBILIÁRIA (Lorem Ipsum conforme spec do dono) */}
+      <SobreSection siteConfig={siteConfig} />
 
       {/* Painel Completo de Filtros (Sheet no celular com rodapé fixo / Dialog no desktop) */}
       <SearchFilterBar

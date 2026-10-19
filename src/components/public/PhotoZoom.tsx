@@ -10,7 +10,7 @@ export interface PhotoZoomProps {
   currentIndex: number
   onIndexChange: (index: number) => void
   propertyTitle: string
-  sourceElement: HTMLElement | null
+  sourceElement?: HTMLElement | null
 }
 
 interface Rect {
@@ -86,7 +86,7 @@ export const PhotoZoom: React.FC<PhotoZoomProps> = ({
   currentIndex,
   onIndexChange,
   propertyTitle,
-  sourceElement,
+  sourceElement = null,
 }) => {
   const [mounted, setMounted] = useState(false)
   const [isClosing, setIsClosing] = useState(false)

@@ -1,3 +1,50 @@
+export interface PublicSiteConfig {
+  logo_url?: string | null
+  favicon_url?: string | null
+  cor_acao?: string | null
+  links?: Array<{ rotulo: string; url: string }>
+  sobre?: {
+    titulo?: string
+    texto?: string
+  }
+  contato?: {
+    endereco?: string
+    horario?: string
+    telefone?: string
+    email?: string
+  }
+}
+
+export interface PublicBannerItem {
+  id: string
+  titulo: string
+  subtitulo?: string
+  texto_botao?: string
+  imagem_desktop_url: string
+  imagem_celular_url?: string
+  destino_slug?: string
+}
+
+export interface PublicHighlightItem {
+  codigo: string
+  titulo: string
+  bairro: string
+  preco: string | number
+  foto_url?: string | null
+}
+
+export interface PublicMapCount {
+  bairro: string
+  quantidade: number
+}
+
+export interface PublicLancamentoDetail {
+  titulo: string
+  texto?: string
+  galeria?: string[]
+  imoveis?: PublicPropertyListItem[]
+}
+
 export interface PublicOrganization {
   name: string
   whatsapp_enabled: boolean
@@ -135,6 +182,83 @@ export async function getFilters(): Promise<PublicFiltersResponse> {
       // Ignora erro de JSON
     }
     throw new Error(msg)
+  }
+  return res.json()
+}
+
+export async function getSiteConfig(): Promise<PublicSiteConfig | null> {
+  try {
+    const url = `${BACKEND}/backend/v1/public/site/config?org=${encodeURIComponent(ORG)}`
+    const res = await fetch(url)
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+export async function getSiteBanners(): Promise<PublicBannerItem[]> {
+  try {
+    const url = `${BACKEND}/backend/v1/public/site/banners?org=${encodeURIComponent(ORG)}`
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const data = await res.json()
+    if (Array.isArray(data)) {
+      return data.slice(0, 5)
+    }
+    return []
+  } catch {
+    return []
+  }
+}
+
+export async function getSiteHighlights(): Promise<PublicHighlightItem[]> {
+  try {
+    const url = `${BACKEND}/backend/v1/public/site/highlights?org=${encodeURIComponent(ORG)}`
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const data = await res.json()
+    if (Array.isArray(data)) {
+      return data.slice(0, 10)
+    }
+    return []
+  } catch {
+    return []
+  }
+}
+
+export async function getSiteMapCounts(): Promise<PublicMapCount[]> {
+  try {
+    const url = `${BACKEND}/backend/v1/public/site/map-counts?org=${encodeURIComponent(ORG)}`
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const data = await res.json()
+    if (Array.isArray(data)) {
+      return data
+    }
+    return []
+  } catch {
+    return []
+  }
+}
+
+export async function getLancamento(slug: string): Promise<PublicLancamentoDetail> {
+  const cleanSlug = encodeURIComponent(slug.trim())
+  const url = `${BACKEND}/backend/v1/public/site/lancamentos/${cleanSlug}?org=${encodeURIComponent(ORG)}`
+  const res = await fetch(url)
+  if (!res.ok) {
+    let msg = 'Lançamento não encontrado.'
+    try {
+      const err = await res.json()
+      if (err && typeof err.message === 'string') {
+        msg = err.message
+      }
+    } catch {
+      // Ignora erro
+    }
+    const err = new Error(msg)
+    ;(err as { status?: number }).status = res.status
+    throw err
   }
   return res.json()
 }

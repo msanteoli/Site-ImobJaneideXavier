@@ -37,60 +37,23 @@ function getSystemTheme(): ResolvedTheme {
 }
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<ThemePreference>(() => getStoredTheme())
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => {
-    const pref = getStoredTheme()
-    return pref === 'auto' ? getSystemTheme() : pref
-  })
-
-  // Sincroniza e aplica a classe no elemento <html>
+  // Versão 2: Tema fixo claro. Nenhuma alternância nem leitura de storage.
   useEffect(() => {
-    const root = document.documentElement
-
-    const applyTheme = () => {
-      let active: ResolvedTheme = 'light'
-      if (theme === 'auto') {
-        active = getSystemTheme()
-      } else {
-        active = theme
-      }
-
-      setResolvedTheme(active)
-      if (active === 'dark') {
-        root.classList.add('dark')
-      } else {
-        root.classList.remove('dark')
-      }
-    }
-
-    applyTheme()
-
-    // Se estiver em 'auto', reagir quando o aparelho/sistema operacional mudar
-    if (theme === 'auto') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      const handleChange = () => applyTheme()
-
-      if (mediaQuery.addEventListener) {
-        mediaQuery.addEventListener('change', handleChange)
-        return () => mediaQuery.removeEventListener('change', handleChange)
-      } else if (mediaQuery.addListener) {
-        mediaQuery.addListener(handleChange)
-        return () => mediaQuery.removeListener(handleChange)
-      }
-    }
-  }, [theme])
-
-  const setTheme = (newTheme: ThemePreference) => {
-    setThemeState(newTheme)
     try {
-      localStorage.setItem(STORAGE_KEY, newTheme)
+      document.documentElement.classList.remove('dark')
     } catch {
-      // Bloqueio de armazenamento
+      // noop
     }
-  }
+  }, [])
 
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
+    <ThemeContext.Provider
+      value={{
+        theme: 'light',
+        resolvedTheme: 'light',
+        setTheme: () => {},
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   )

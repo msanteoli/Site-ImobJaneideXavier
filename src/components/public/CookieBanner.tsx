@@ -11,17 +11,7 @@ interface CookieBannerProps {
 export const CookieBanner: React.FC<CookieBannerProps> = ({ forceOpen, onClose }) => {
   const [isVisible, setIsVisible] = useState(false)
 
-  // Verifica se as variáveis de Meta ou Google estão configuradas
-  const metaId = (import.meta.env.VITE_META_PIXEL_ID || '').trim()
-  const googleId = (import.meta.env.VITE_GOOGLE_ADS_ID || '').trim()
-  const hasMarketingPixels = Boolean(metaId || googleId)
-
   useEffect(() => {
-    if (!hasMarketingPixels) {
-      setIsVisible(false)
-      return
-    }
-
     if (forceOpen) {
       setIsVisible(true)
       return
@@ -33,9 +23,9 @@ export const CookieBanner: React.FC<CookieBannerProps> = ({ forceOpen, onClose }
     } else {
       setIsVisible(false)
     }
-  }, [forceOpen, hasMarketingPixels])
+  }, [forceOpen])
 
-  if (!hasMarketingPixels || !isVisible) {
+  if (!isVisible) {
     return null
   }
 
@@ -55,12 +45,12 @@ export const CookieBanner: React.FC<CookieBannerProps> = ({ forceOpen, onClose }
     <div
       role="region"
       aria-label="Aviso de cookies e privacidade"
-      className="fixed bottom-16 sm:bottom-4 inset-x-4 max-w-xl mx-auto z-50 p-4 sm:p-5 bg-card/98 backdrop-blur-md border border-border rounded-[12px] shadow-[0_6px_16px_rgba(0,0,0,0.12)] dark:shadow-none"
+      className="fixed bottom-16 sm:bottom-4 inset-x-4 max-w-xl mx-auto z-50 p-4 sm:p-5 bg-card/98 backdrop-blur-md border border-border rounded-[12px] shadow-[0_6px_16px_rgba(0,0,0,0.12)]"
     >
       <div className="flex flex-col gap-3">
         <p className="text-sm text-foreground text-left leading-relaxed">
-          Usamos cookies de marketing para medir o resultado dos nossos anúncios. Você pode recusar
-          sem perder nada no site.{' '}
+          Usamos cookies para melhorar sua experiência e medir o resultado de anúncios. Você pode
+          aceitar ou recusar com total liberdade.{' '}
           <Link
             to="/privacidade"
             className="text-foreground underline underline-offset-4 hover:opacity-80 transition-opacity whitespace-nowrap"
@@ -70,19 +60,19 @@ export const CookieBanner: React.FC<CookieBannerProps> = ({ forceOpen, onClose }
           .
         </p>
         <div className="flex items-center gap-3 w-full justify-end">
-          {/* Duas ações com o mesmo peso visual: "Aceitar" preenchida e "Recusar" de contorno */}
+          {/* Duas ações com o mesmo destaque visual */}
           <Button
             type="button"
             variant="outline"
-            className="rounded-[8px] h-10 px-5 text-sm font-medium border-border min-h-[44px]"
+            className="flex-1 sm:flex-initial rounded-[8px] h-10 px-5 text-sm font-medium border-border min-h-[44px]"
             onClick={handleDecline}
           >
             Recusar
           </Button>
           <Button
             type="button"
-            variant="default"
-            className="rounded-[8px] h-10 px-5 text-sm font-medium min-h-[44px]"
+            variant="outline"
+            className="flex-1 sm:flex-initial rounded-[8px] h-10 px-5 text-sm font-medium border-primary text-primary hover:bg-primary/10 min-h-[44px]"
             onClick={handleAccept}
           >
             Aceitar
