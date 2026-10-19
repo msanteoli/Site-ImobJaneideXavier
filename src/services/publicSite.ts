@@ -13,6 +13,18 @@ export interface PublicSiteConfig {
     telefone?: string
     email?: string
   }
+  redes?: {
+    instagram?: string
+    whatsapp?: string
+  }
+  versao?: number
+  previa?: boolean
+}
+
+export interface SiteConfigLoadResult {
+  config: PublicSiteConfig | null
+  isPreview: boolean
+  isExpiredPreview: boolean
 }
 
 export interface PublicBannerItem {
@@ -186,15 +198,103 @@ export async function getFilters(): Promise<PublicFiltersResponse> {
   return res.json()
 }
 
-export async function getSiteConfig(): Promise<PublicSiteConfig | null> {
+const PREVIEW_STORAGE_KEY = 'imobdigital_site_preview_token'
+
+export function getStoredPreviewToken(): string | null {
+  if (typeof window === 'undefined') return null
   try {
-    const url = `${BACKEND}/backend/v1/public/site/config?org=${encodeURIComponent(ORG)}`
-    const res = await fetch(url)
-    if (!res.ok) return null
-    return await res.json()
+    const urlParams = new URLSearchParams(window.location.search)
+    const tokenFromUrl = urlParams.get('preview')
+    if (tokenFromUrl && tokenFromUrl.trim()) {
+      sessionStorage.setItem(PREVIEW_STORAGE_KEY, tokenFromUrl.trim())
+      return tokenFromUrl.trim()
+    }
   } catch {
-    return null
+    // sessionStorage ou URL inacessível
   }
+
+  try {
+    const stored = sessionStorage.getItem(PREVIEW_STORAGE_KEY)
+    if (stored && stored.trim()) return stored.trim()
+  } catch {
+    // sessionStorage inacessível
+  }
+
+  return null
+}
+
+export function clearStoredPreviewToken(): void {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.removeItem(PREVIEW_STORAGE_KEY)
+  } catch {
+    // noop
+  }
+}
+
+export async function fetchSiteConfigDetailed(): Promise<SiteConfigLoadResult> {
+  const token = getStoredPreviewToken()
+  const baseEndpoint = `${BACKEND}/backend/v1/public/site/config?org=${encodeURIComponent(ORG)}`
+
+  if (token) {
+    try {
+      const previewUrl = `${baseEndpoint}&preview=${encodeURIComponent(token)}`
+      const res = await fetch(previewUrl)
+
+      if (res.status === 401) {
+        clearStoredPreviewToken()
+        // Buscar o conteúdo publicado como fallback
+        let publishedConfig: PublicSiteConfig | null = null
+        try {
+          const pubRes = await fetch(baseEndpoint)
+          if (pubRes.ok) {
+            publishedConfig = await pubRes.json()
+          }
+        } catch {
+          // Falha na rede do publicado
+        }
+        return {
+          config: publishedConfig,
+          isPreview: false,
+          isExpiredPreview: true,
+        }
+      }
+
+      if (res.ok) {
+        const data = (await res.json()) as PublicSiteConfig
+        return {
+          config: {
+            ...data,
+            previa: data.previa ?? true,
+          },
+          isPreview: true,
+          isExpiredPreview: false,
+        }
+      }
+    } catch {
+      // Erro de rede ao buscar preview, tenta publicado
+    }
+  }
+
+  try {
+    const res = await fetch(baseEndpoint)
+    if (!res.ok) {
+      return { config: null, isPreview: false, isExpiredPreview: false }
+    }
+    const data = (await res.json()) as PublicSiteConfig
+    return {
+      config: data,
+      isPreview: Boolean(data.previa),
+      isExpiredPreview: false,
+    }
+  } catch {
+    return { config: null, isPreview: false, isExpiredPreview: false }
+  }
+}
+
+export async function getSiteConfig(): Promise<PublicSiteConfig | null> {
+  const result = await fetchSiteConfigDetailed()
+  return result.config
 }
 
 export async function getSiteBanners(): Promise<PublicBannerItem[]> {

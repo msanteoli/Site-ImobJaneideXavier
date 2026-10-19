@@ -11,8 +11,8 @@ const DEFAULT_LOREM_TEXT =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
 
 export const SobreSection: React.FC<SobreSectionProps> = ({ siteConfig }) => {
-  const titulo = siteConfig?.sobre?.titulo || 'Sobre a Imobiliária Janeide Xavier'
-  const resumo = siteConfig?.sobre?.texto || DEFAULT_LOREM_TEXT
+  const titulo = siteConfig?.sobre?.titulo?.trim() || 'Sobre a Imobiliária Janeide Xavier'
+  const resumo = siteConfig?.sobre?.texto?.trim() || DEFAULT_LOREM_TEXT
 
   return (
     <section

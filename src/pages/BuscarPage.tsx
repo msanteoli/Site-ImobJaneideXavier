@@ -5,15 +5,14 @@ import {
   searchProperties,
   getSiteBanners,
   getSiteHighlights,
-  getSiteConfig,
   getSiteMapCounts,
   PublicFiltersResponse,
   PublicPropertyListItem,
   PublicBannerItem,
   PublicHighlightItem,
-  PublicSiteConfig,
   PublicMapCount,
 } from '@/services/publicSite'
+import { useSiteConfig } from '@/contexts/SiteConfigContext'
 import { PUBLIC_PROPERTY_TYPE_LABELS } from '@/lib/publicSiteUtils'
 import { setFilters as saveFiltersToMemory } from '@/lib/searchMemory'
 import { initCampaignFromUrl } from '@/lib/campaign'
@@ -40,11 +39,11 @@ export const BuscarPage: React.FC = () => {
   const [filterMeta, setFilterMeta] = useState<PublicFiltersResponse | null>(null)
   const [, setMetaError] = useState<string | null>(null)
 
-  // Dados v2: Banners da Hero, Destaques, Config e Mapa
+  // Dados v2: Banners da Hero, Destaques e Mapa
   const [banners, setBanners] = useState<PublicBannerItem[]>([])
   const [highlights, setHighlights] = useState<PublicHighlightItem[]>([])
-  const [siteConfig, setSiteConfig] = useState<PublicSiteConfig | null>(null)
   const [mapCounts, setMapCounts] = useState<PublicMapCount[]>([])
+  const { config: siteConfig } = useSiteConfig()
 
   // Lista de imóveis e paginação da grade
   const [items, setItems] = useState<PublicPropertyListItem[]>([])
@@ -135,12 +134,6 @@ export const BuscarPage: React.FC = () => {
       .catch(() => {
         if (mounted) setHighlights([])
       })
-
-    getSiteConfig()
-      .then((data) => {
-        if (mounted && data) setSiteConfig(data)
-      })
-      .catch(() => {})
 
     getSiteMapCounts()
       .then((data) => {

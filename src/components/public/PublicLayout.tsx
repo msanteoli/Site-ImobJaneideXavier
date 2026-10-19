@@ -6,12 +6,15 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { PublicContactModal } from './PublicContactModal'
 import { CookieBanner } from './CookieBanner'
 import { FloatingWhatsAppButton } from './FloatingWhatsAppButton'
+import { getFilters, PublicFiltersResponse } from '@/services/publicSite'
+import { useSiteConfig } from '@/contexts/SiteConfigContext'
 import {
-  getFilters,
-  getSiteConfig,
-  PublicFiltersResponse,
-  PublicSiteConfig,
-} from '@/services/publicSite'
+  resolveAssetUrl,
+  sanitizeHttpsUrl,
+  sanitizeTelUrl,
+  sanitizeMailtoUrl,
+} from '@/lib/publicSiteUtils'
+import { AlertTriangle, Eye, MapPin, Clock, Phone, Mail } from 'lucide-react'
 
 /**
  * Itens de menu configuráveis no topo para o site público v2:
@@ -39,14 +42,6 @@ function loadCachedFilters(): Promise<PublicFiltersResponse> {
   return filtersCachePromise
 }
 
-let siteConfigCachePromise: Promise<PublicSiteConfig | null> | null = null
-function loadCachedSiteConfig(): Promise<PublicSiteConfig | null> {
-  if (!siteConfigCachePromise) {
-    siteConfigCachePromise = getSiteConfig().catch(() => null)
-  }
-  return siteConfigCachePromise
-}
-
 interface PublicLayoutProps {
   children: React.ReactNode
   orgName?: string
@@ -70,7 +65,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [cookiePreferencesOpen, setCookiePreferencesOpen] = useState(false)
   const [isWhatsappEnabled, setIsWhatsappEnabled] = useState<boolean>(whatsappEnabled ?? false)
-  const [siteConfig, setSiteConfig] = useState<PublicSiteConfig | null>(null)
+  const { config: siteConfig, isPreview, isExpiredPreview } = useSiteConfig()
 
   React.useEffect(() => {
     if (whatsappEnabled !== undefined) {
@@ -86,10 +81,6 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
           setIsWhatsappEnabled(false)
         })
     }
-
-    loadCachedSiteConfig().then((cfg) => {
-      if (cfg) setSiteConfig(cfg)
-    })
   }, [whatsappEnabled])
 
   const handleOpenContactModal = () => {
@@ -126,10 +117,44 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
     }
   }
 
-  const customLinks = siteConfig?.links && Array.isArray(siteConfig.links) ? siteConfig.links : []
+  // Resolução de Logo
+  const resolvedLogo = resolveAssetUrl(siteConfig?.logo_url)
+
+  // Links normais com rotulo e url válidos (apenas https://)
+  const validCustomLinks = (siteConfig?.links || [])
+    .filter((l) => l && l.rotulo && sanitizeHttpsUrl(l.url))
+    .map((l) => ({ rotulo: l.rotulo, url: sanitizeHttpsUrl(l.url)! }))
+
+  // Redes sociais (apenas https://)
+  const instagramUrl = sanitizeHttpsUrl(siteConfig?.redes?.instagram)
+  const whatsappUrl = sanitizeHttpsUrl(siteConfig?.redes?.whatsapp)
+
+  // Informações de contato do rodapé
+  const contato = siteConfig?.contato
+  const hasEndereco = Boolean(contato?.endereco?.trim())
+  const hasHorario = Boolean(contato?.horario?.trim())
+  const rawTelefone = contato?.telefone?.trim()
+  const telLink = sanitizeTelUrl(rawTelefone)
+  const rawEmail = contato?.email?.trim()
+  const mailtoLink = sanitizeMailtoUrl(rawEmail)
+  const hasContatoAny = hasEndereco || hasHorario || Boolean(rawTelefone) || Boolean(rawEmail)
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-primary/20">
+      {/* Faixa de prévia (preview ativo ou expirado) */}
+      {isPreview && (
+        <div className="w-full bg-amber-500/15 border-b border-amber-500/30 text-amber-900 dark:text-amber-200 py-2 px-4 text-xs sm:text-sm font-medium text-center flex items-center justify-center gap-2">
+          <Eye className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span>Prévia do rascunho, ainda não publicado.</span>
+        </div>
+      )}
+      {isExpiredPreview && (
+        <div className="w-full bg-destructive/15 border-b border-destructive/30 text-destructive py-2 px-4 text-xs sm:text-sm font-medium text-center flex items-center justify-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>Prévia expirada. Gere uma nova no sistema.</span>
+        </div>
+      )}
+
       {/* Cabeçalho: logo, Comprar, Alugar, pílula "Contato". Sem botão "Entrar" */}
       <header className="pub-enter-header sticky top-0 z-40 w-full border-b border-border bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -140,9 +165,9 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
                 to="/"
                 className="text-lg sm:text-xl font-semibold tracking-tight text-foreground hover:opacity-90 transition-opacity truncate min-h-[44px] inline-flex items-center gap-2"
               >
-                {siteConfig?.logo_url ? (
+                {resolvedLogo ? (
                   <img
-                    src={siteConfig.logo_url}
+                    src={resolvedLogo}
                     alt={orgName}
                     className="h-10 w-auto max-w-[200px] object-contain"
                   />
@@ -212,9 +237,9 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
           <div className="space-y-6">
             <SheetHeader className="text-left">
               <SheetTitle className="text-lg font-semibold text-foreground">
-                {siteConfig?.logo_url ? (
+                {resolvedLogo ? (
                   <img
-                    src={siteConfig.logo_url}
+                    src={resolvedLogo}
                     alt={orgName}
                     className="h-8 w-auto max-w-[180px] object-contain"
                   />
@@ -262,19 +287,99 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
       {/* Botão flutuante de WhatsApp */}
       {isWhatsappEnabled && <FloatingWhatsAppButton className={floatingWaClassName} />}
 
-      {/* Rodapé: links de Instagram, WhatsApp e outros (vindos da config), copyright, Privacidade, Preferências de cookies. Sem seletor de tema. */}
-      <footer className="border-t border-border bg-background pt-8 pb-20 px-4 text-sm text-muted-foreground">
-        <div className="max-w-7xl mx-auto space-y-6">
-          {/* Links adicionais vindos da config (Instagram, WhatsApp, etc) */}
-          {customLinks.length > 0 && (
-            <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-medium">
-              {customLinks.map((link, idx) => (
+      {/* Rodapé: contatos, links, redes sociais, copyright, links institucionais */}
+      <footer className="border-t border-border bg-background pt-10 pb-20 px-4 text-sm text-muted-foreground">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Bloco de Contato no rodapé (campos vazios não aparecem) */}
+          {hasContatoAny && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pb-4 border-b border-border/50 text-xs sm:text-sm">
+              {hasEndereco && (
+                <div className="flex items-start gap-2.5">
+                  <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold block text-foreground">Endereço</span>
+                    <span className="text-muted-foreground">{contato!.endereco}</span>
+                  </div>
+                </div>
+              )}
+              {hasHorario && (
+                <div className="flex items-start gap-2.5">
+                  <Clock className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold block text-foreground">Horário</span>
+                    <span className="text-muted-foreground">{contato!.horario}</span>
+                  </div>
+                </div>
+              )}
+              {rawTelefone && (
+                <div className="flex items-start gap-2.5">
+                  <Phone className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold block text-foreground">Telefone</span>
+                    {telLink ? (
+                      <a
+                        href={telLink}
+                        className="text-foreground hover:underline transition-colors block"
+                      >
+                        {rawTelefone}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">{rawTelefone}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+              {rawEmail && (
+                <div className="flex items-start gap-2.5">
+                  <Mail className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold block text-foreground">E-mail</span>
+                    {mailtoLink ? (
+                      <a
+                        href={mailtoLink}
+                        className="text-foreground hover:underline transition-colors block break-all"
+                      >
+                        {rawEmail}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground break-all">{rawEmail}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Links e redes (Instagram, WhatsApp e links adicionais da config) */}
+          {(validCustomLinks.length > 0 || instagramUrl || whatsappUrl) && (
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs sm:text-sm font-medium">
+              {instagramUrl && (
+                <a
+                  href={instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground text-foreground transition-colors min-h-[44px] inline-flex items-center px-2 py-1 gap-1.5"
+                >
+                  <span>Instagram</span>
+                </a>
+              )}
+              {whatsappUrl && (
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground text-foreground transition-colors min-h-[44px] inline-flex items-center px-2 py-1 gap-1.5"
+                >
+                  <span>WhatsApp</span>
+                </a>
+              )}
+              {validCustomLinks.map((link, idx) => (
                 <a
                   key={idx}
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-foreground transition-colors min-h-[44px] inline-flex items-center px-2 py-1"
+                  className="hover:text-foreground text-foreground transition-colors min-h-[44px] inline-flex items-center px-2 py-1"
                 >
                   {link.rotulo}
                 </a>

@@ -33,11 +33,127 @@ export function formatCurrencyBR(value: number): string {
   })
 }
 
-export function getFullPhotoUrl(path: string | null): string | null {
+export function getFullPhotoUrl(path: string | null | undefined): string | null {
   if (!path) return null
-  if (path.startsWith('http://') || path.startsWith('https://')) return path
+  const trimmed = path.trim()
+  if (!trimmed) return null
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed
   const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
-  return `${base}${path.startsWith('/') ? '' : '/'}${path}`
+  if (trimmed.startsWith('/')) {
+    return `${base}${trimmed}`
+  }
+  return `${base}/${trimmed}`
+}
+
+/**
+ * Utilitário específico para URLs de imagens e favicon:
+ * endereço que comece com "/" prefixa VITE_API_BASE_URL;
+ * endereço que já comece com "http" passa direto.
+ */
+export function resolveAssetUrl(url?: string | null): string | null {
+  return getFullPhotoUrl(url)
+}
+
+/**
+ * Validador e normalizador de URLs https:// para links e redes
+ */
+export function sanitizeHttpsUrl(url?: string | null): string | null {
+  if (!url) return null
+  const trimmed = url.trim()
+  if (/^https:\/\//i.test(trimmed)) {
+    return trimmed
+  }
+  return null
+}
+
+/**
+ * Limpa e formata número para link tel:
+ * Aceita números com dígitos (ex: (75) 99999-9999, 5575999999999, +55 75 99999-9999)
+ */
+export function sanitizeTelUrl(phone?: string | null): string | null {
+  if (!phone) return null
+  const digits = phone.replace(/[^\d+]/g, '')
+  if (!digits || digits.replace(/[^\d]/g, '').length < 8) return null
+  return `tel:${digits}`
+}
+
+/**
+ * Limpa e formata e-mail para link mailto:
+ */
+export function sanitizeMailtoUrl(email?: string | null): string | null {
+  if (!email) return null
+  const trimmed = email.trim()
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    return `mailto:${trimmed}`
+  }
+  return null
+}
+
+/**
+ * Converte cor hex (#RRGGBB ou #RGB) para HSL string no formato aceito pelo tema ("H S% L%"),
+ * e calcula a cor de contraste apropriada (preto ou branco) para --primary-foreground.
+ */
+export function hexToHslValues(
+  hexStr?: string | null,
+): { primaryHsl: string; foregroundHsl: string } | null {
+  if (!hexStr) return null
+  const trimmed = hexStr.trim()
+  const hexMatch =
+    trimmed.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i) ||
+    trimmed.match(/^#?([a-f\d])([a-f\d])([a-f\d])$/i)
+  if (!hexMatch) return null
+
+  let r: number, g: number, b: number
+  if (hexMatch[1].length === 1) {
+    r = parseInt(hexMatch[1] + hexMatch[1], 16) / 255
+    g = parseInt(hexMatch[2] + hexMatch[2], 16) / 255
+    b = parseInt(hexMatch[3] + hexMatch[3], 16) / 255
+  } else {
+    r = parseInt(hexMatch[1], 16) / 255
+    g = parseInt(hexMatch[2], 16) / 255
+    b = parseInt(hexMatch[3], 16) / 255
+  }
+
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  let h = 0
+  let s = 0
+  const l = (max + min) / 2
+
+  if (max !== min) {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0)
+        break
+      case g:
+        h = (b - r) / d + 2
+        break
+      case b:
+        h = (r - g) / d + 4
+        break
+    }
+    h /= 6
+  }
+
+  const deg = Math.round(h * 360)
+  const sat = Math.round(s * 100)
+  const lum = Math.round(l * 100)
+
+  // Luminância relativa para cálculo de contraste WCAG
+  const sRGB = [r, g, b].map((val) => {
+    return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4)
+  })
+  const relativeLuminance = 0.2126 * sRGB[0] + 0.7152 * sRGB[1] + 0.0722 * sRGB[2]
+
+  // Se a cor for clara (luminância relativa > 0.45), usa preto no texto, senão branco
+  const foregroundHsl = relativeLuminance > 0.45 ? '0 0% 4%' : '0 0% 100%'
+
+  return {
+    primaryHsl: `${deg} ${sat}% ${lum}%`,
+    foregroundHsl,
+  }
 }
 
 export function buildSpecsSummary(props: {

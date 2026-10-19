@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Building2, MapPin, Phone, Mail, Clock } from 'lucide-react'
 import { PublicLayout } from '@/components/public/PublicLayout'
-import { getSiteConfig, PublicSiteConfig } from '@/services/publicSite'
+import { useSiteConfig } from '@/contexts/SiteConfigContext'
+import { sanitizeTelUrl, sanitizeMailtoUrl } from '@/lib/publicSiteUtils'
 
 const LOREM_SOBRE_PARAGRAPHS = [
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',
@@ -11,16 +12,19 @@ const LOREM_SOBRE_PARAGRAPHS = [
 ]
 
 export const SobrePage: React.FC = () => {
-  const [config, setConfig] = useState<PublicSiteConfig | null>(null)
+  const { config } = useSiteConfig()
 
-  useEffect(() => {
-    getSiteConfig().then((cfg) => {
-      if (cfg) setConfig(cfg)
-    })
-  }, [])
-
-  const titulo = config?.sobre?.titulo || 'Sobre a Imobiliária Janeide Xavier'
+  const titulo = config?.sobre?.titulo?.trim() || 'Sobre a Imobiliária Janeide Xavier'
+  const sobreTexto = config?.sobre?.texto?.trim()
   const contato = config?.contato
+
+  const hasEndereco = Boolean(contato?.endereco?.trim())
+  const hasHorario = Boolean(contato?.horario?.trim())
+  const rawTelefone = contato?.telefone?.trim()
+  const telLink = sanitizeTelUrl(rawTelefone)
+  const rawEmail = contato?.email?.trim()
+  const mailtoLink = sanitizeMailtoUrl(rawEmail)
+  const hasContatoAny = hasEndereco || hasHorario || Boolean(rawTelefone) || Boolean(rawEmail)
 
   return (
     <PublicLayout>
@@ -49,57 +53,75 @@ export const SobrePage: React.FC = () => {
           </p>
         </header>
 
-        {/* Texto Completo (Lorem Ipsum conforme regra do dono) */}
+        {/* Texto Completo (sobre.texto ou Lorem Ipsum como padrão) */}
         <article className="prose prose-neutral max-w-none space-y-6 text-foreground/90 text-base sm:text-lg leading-relaxed">
-          {config?.sobre?.texto ? (
-            <p className="whitespace-pre-wrap">{config.sobre.texto}</p>
+          {sobreTexto ? (
+            <p className="whitespace-pre-wrap">{sobreTexto}</p>
           ) : (
             LOREM_SOBRE_PARAGRAPHS.map((p, idx) => <p key={idx}>{p}</p>)
           )}
         </article>
 
-        {/* Informações de contato vindas da config */}
-        {contato && (
+        {/* Informações de contato vindas da config (campos vazios não aparecem) */}
+        {hasContatoAny && (
           <section className="pt-8 border-t border-border space-y-4">
             <h2 className="text-xl font-semibold tracking-tight text-foreground">
               Atendimento e Localização
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              {contato.endereco && (
+              {hasEndereco && (
                 <div className="flex items-start gap-3 p-4 rounded-[12px] bg-muted/50 border border-border">
                   <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
                     <span className="font-semibold block text-foreground">Endereço</span>
-                    <span className="text-muted-foreground">{contato.endereco}</span>
+                    <span className="text-muted-foreground">{contato!.endereco}</span>
                   </div>
                 </div>
               )}
-              {contato.horario && (
+              {hasHorario && (
                 <div className="flex items-start gap-3 p-4 rounded-[12px] bg-muted/50 border border-border">
                   <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
                     <span className="font-semibold block text-foreground">
                       Horário de funcionamento
                     </span>
-                    <span className="text-muted-foreground">{contato.horario}</span>
+                    <span className="text-muted-foreground">{contato!.horario}</span>
                   </div>
                 </div>
               )}
-              {contato.telefone && (
+              {rawTelefone && (
                 <div className="flex items-start gap-3 p-4 rounded-[12px] bg-muted/50 border border-border">
                   <Phone className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
                     <span className="font-semibold block text-foreground">Telefone</span>
-                    <span className="text-muted-foreground">{contato.telefone}</span>
+                    {telLink ? (
+                      <a
+                        href={telLink}
+                        className="text-foreground hover:underline transition-colors block"
+                      >
+                        {rawTelefone}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground block">{rawTelefone}</span>
+                    )}
                   </div>
                 </div>
               )}
-              {contato.email && (
+              {rawEmail && (
                 <div className="flex items-start gap-3 p-4 rounded-[12px] bg-muted/50 border border-border">
                   <Mail className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
                     <span className="font-semibold block text-foreground">E-mail</span>
-                    <span className="text-muted-foreground">{contato.email}</span>
+                    {mailtoLink ? (
+                      <a
+                        href={mailtoLink}
+                        className="text-foreground hover:underline transition-colors block break-all"
+                      >
+                        {rawEmail}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground block break-all">{rawEmail}</span>
+                    )}
                   </div>
                 </div>
               )}
