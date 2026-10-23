@@ -10,6 +10,27 @@
 
 @layer base {
   :root {
+    /* Tipografia editorial fluida (clamp) e pesos médios */
+    --font-display-sm: clamp(1.75rem, 1.4rem + 1.2vw, 2.25rem);
+    --lh-display-sm: 1.2;
+    --font-display-md: clamp(2.25rem, 1.8rem + 1.8vw, 3rem);
+    --lh-display-md: 1.15;
+    --font-display-lg: clamp(2.75rem, 2.1rem + 2.5vw, 4rem);
+    --lh-display-lg: 1.08;
+    --font-display-xl: clamp(3.25rem, 2.3rem + 3.8vw, 5.5rem);
+    --lh-display-xl: 1.02;
+
+    /* Espaçamentos verticais de seções com clamp() */
+    --spacing-section-sm: clamp(2.5rem, 2rem + 2vw, 4rem);
+    --spacing-section-md: clamp(3.5rem, 2.5rem + 3.5vw, 6rem);
+    --spacing-section-lg: clamp(4.5rem, 3rem + 5vw, 8rem);
+
+    /* Variáveis do sistema de movimento */
+    --duration-short: 200ms;
+    --duration-medium: 600ms;
+    --duration-long: 900ms;
+    --ease-reveal: cubic-bezier(0.22, 1, 0.36, 1);
+
     /* Tema claro (:root) */
     --background: 240 5% 96%;
     --foreground: 0 0% 4%;
@@ -179,6 +200,37 @@
   .on-photo {
     background: hsl(var(--background) / 0.8);
     backdrop-filter: blur(8px);
+  }
+
+  /* Classes do sistema de reveal / movimento */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition-property: opacity, transform;
+    transition-duration: var(--duration-medium);
+    transition-timing-function: var(--ease-reveal);
+    will-change: opacity, transform;
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-photo {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0.85;
+    transform: translateY(12px);
+    transition-property: opacity, transform, clip-path;
+    transition-duration: var(--duration-long);
+    transition-timing-function: var(--ease-reveal);
+    will-change: clip-path, transform, opacity;
+  }
+
+  .reveal-photo.is-visible {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+    transform: translateY(0);
   }
 
   /* KEEP ALL THE ANIMATIONS CLASSES THAT ARE USED BELOW */
@@ -363,6 +415,14 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .reveal,
+  .reveal-photo {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+    transition: none !important;
   }
 }
 

@@ -27,8 +27,36 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter var', 'SF Pro Display', 'system-ui', 'sans-serif'],
-        display: ['SF Pro Display', 'Inter var', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        'display-sm': [
+          'var(--font-display-sm)',
+          { lineHeight: 'var(--lh-display-sm)', letterSpacing: '-0.02em', fontWeight: '500' },
+        ],
+        'display-md': [
+          'var(--font-display-md)',
+          { lineHeight: 'var(--lh-display-md)', letterSpacing: '-0.025em', fontWeight: '500' },
+        ],
+        'display-lg': [
+          'var(--font-display-lg)',
+          { lineHeight: 'var(--lh-display-lg)', letterSpacing: '-0.03em', fontWeight: '500' },
+        ],
+        'display-xl': [
+          'var(--font-display-xl)',
+          { lineHeight: 'var(--lh-display-xl)', letterSpacing: '-0.035em', fontWeight: '500' },
+        ],
+      },
+      spacing: {
+        'section-sm': 'var(--spacing-section-sm)',
+        'section-md': 'var(--spacing-section-md)',
+        'section-lg': 'var(--spacing-section-lg)',
+      },
+      transitionDuration: {
+        short: 'var(--duration-short)',
+        medium: 'var(--duration-medium)',
+        long: 'var(--duration-long)',
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -97,6 +125,7 @@ export default {
       },
       transitionTimingFunction: {
         apple: 'cubic-bezier(0.42, 0, 0.58, 1)',
+        reveal: 'var(--ease-reveal)',
       },
     },
   },
