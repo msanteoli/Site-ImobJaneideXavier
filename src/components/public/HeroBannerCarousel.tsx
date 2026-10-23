@@ -137,10 +137,6 @@ export const HeroBannerCarousel: React.FC<HeroBannerCarouselProps> = ({
     }
   }
 
-  // Imagem padrão caso não haja banners
-  const fallbackBg =
-    'https://img.usecurling.com/p/1600/900?q=modern%20house%20architecture&color=neutral'
-
   return (
     <section
       id="hero-banner-section"
@@ -184,12 +180,7 @@ export const HeroBannerCarousel: React.FC<HeroBannerCarouselProps> = ({
             )
           })
         ) : (
-          <div className="absolute inset-0">
-            <img
-              src={fallbackBg}
-              alt="Imóveis em Feira de Santana"
-              className="w-full h-full object-cover"
-            />
+          <div className="absolute inset-0 bg-neutral-900">
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/30" />
           </div>
         )}
@@ -242,9 +233,11 @@ export const HeroBannerCarousel: React.FC<HeroBannerCarouselProps> = ({
       <div className="relative z-20 w-full max-w-4xl mx-auto px-4 sm:px-6 py-12 flex flex-col items-center text-center space-y-6">
         {hasBanners && banners[currentBannerIndex] && (
           <div className="space-y-2 max-w-2xl animate-in fade-in duration-300">
-            <span className="text-xs uppercase tracking-wider font-semibold text-primary-foreground/90 bg-primary/80 backdrop-blur px-3 py-1 rounded-full inline-block">
-              Lançamento
-            </span>
+            {banners[currentBannerIndex].tipo === 'lancamento' && (
+              <span className="text-xs uppercase tracking-wider font-semibold text-primary-foreground/90 bg-primary/80 backdrop-blur px-3 py-1 rounded-full inline-block">
+                Lançamento
+              </span>
+            )}
             <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white drop-shadow-md">
               {banners[currentBannerIndex].titulo}
             </h1>

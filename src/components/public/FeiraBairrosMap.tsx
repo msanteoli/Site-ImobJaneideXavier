@@ -88,13 +88,107 @@ export const FeiraBairrosMap: React.FC<FeiraBairrosMapProps> = ({
     }
   }, [])
 
-  // Se não houver arquivo GeoJSON no projeto, a regra do dono diz:
-  // "Se não houver arquivo, a seção NÃO aparece (não invente polígonos falsos; se não existir arquivo pronto no projeto, deixe a seção condicionada à presença dele e sinalize no relatório)."
-  if (loading || !geoData || !geoData.features || geoData.features.length === 0) {
+  // Calcula limites e monta caminhos SVG a partir da geometria (Polygon e MultiPolygon)
+  const { viewBox, featuresPaths } = useMemo(() => {
+    if (!geoData || !Array.isArray(geoData.features) || geoData.features.length === 0) {
+      return { viewBox: '0 0 100 100', featuresPaths: [] }
+    }
+
+    let minX = Infinity
+    let maxX = -Infinity
+    let minY = Infinity
+    let maxY = -Infinity
+
+    // Converte anel de coordenadas [lng, lat] em caminho SVG:
+    // Em SVG, Y cresce para baixo, enquanto latitude cresce para o norte (para cima).
+    // Invertemos a latitude (y = -lat) para manter a orientação geográfica correta do mapa.
+    const ringToPath = (ring: number[][]) => {
+      let d = ''
+      for (let i = 0; i < ring.length; i++) {
+        const pt = ring[i]
+        if (!pt || pt.length < 2) continue
+        const x = pt[0]
+        const y = -pt[1]
+
+        if (x < minX) minX = x
+        if (x > maxX) maxX = x
+        if (y < minY) minY = y
+        if (y > maxY) maxY = y
+
+        d += `${i === 0 ? 'M' : 'L'} ${x} ${y} `
+      }
+      return d ? `${d}Z ` : ''
+    }
+
+    const paths = geoData.features.map((feature, idx) => {
+      let pathData = ''
+      const geom = feature.geometry
+      if (geom) {
+        if (geom.type === 'Polygon') {
+          const coords = geom.coordinates as number[][][]
+          if (Array.isArray(coords)) {
+            coords.forEach((ring) => {
+              if (Array.isArray(ring)) {
+                pathData += ringToPath(ring)
+              }
+            })
+          }
+        } else if (geom.type === 'MultiPolygon') {
+          const coords = geom.coordinates as number[][][][]
+          if (Array.isArray(coords)) {
+            coords.forEach((poly) => {
+              if (Array.isArray(poly)) {
+                poly.forEach((ring) => {
+                  if (Array.isArray(ring)) {
+                    pathData += ringToPath(ring)
+                  }
+                })
+              }
+            })
+          }
+        }
+      }
+
+      const bairroNome =
+        feature.properties.name ||
+        feature.properties.bairro ||
+        feature.properties.nome ||
+        `Bairro ${idx + 1}`
+
+      return {
+        id: idx,
+        nome: bairroNome,
+        d: pathData.trim(),
+      }
+    })
+
+    if (!isFinite(minX) || !isFinite(maxX) || !isFinite(minY) || !isFinite(maxY)) {
+      return { viewBox: '0 0 100 100', featuresPaths: [] }
+    }
+
+    const width = maxX - minX || 1
+    const height = maxY - minY || 1
+    const marginX = width * 0.04
+    const marginY = height * 0.04
+
+    const vbX = minX - marginX
+    const vbY = minY - marginY
+    const vbW = width + marginX * 2
+    const vbH = height + marginY * 2
+
+    return {
+      viewBox: `${vbX} ${vbY} ${vbW} ${vbH}`,
+      featuresPaths: paths,
+    }
+  }, [geoData])
+
+  // Se não houver arquivo GeoJSON no projeto, a regra diz:
+  // "Se não houver arquivo, a seção NÃO aparece"
+  if (loading || !geoData || featuresPaths.length === 0) {
     return null
   }
 
-  // Se o GeoJSON existir, renderiza SVG com polígonos calculando viewBox a partir dos bounds dos polígonos
+  // Renderiza SVG com polígonos calculando viewBox a partir dos bounds
   // Sem pino, sem coordenada de imóvel, sem endereço. Apenas polígonos de bairros.
   return (
     <section
@@ -122,21 +216,26 @@ export const FeiraBairrosMap: React.FC<FeiraBairrosMapProps> = ({
 
         {/* Renderizador de SVG interativo baseado nas features do GeoJSON */}
         <div className="relative w-full aspect-[16/9] max-h-[500px] bg-muted/30 rounded-[16px] border border-border overflow-hidden flex items-center justify-center p-4">
-          <svg className="w-full h-full" viewBox="0 0 800 600">
-            {geoData.features.map((feature, idx) => {
-              const bairroNome =
-                feature.properties.name ||
-                feature.properties.bairro ||
-                feature.properties.nome ||
-                `Bairro ${idx + 1}`
-
+          <svg className="w-full h-full" viewBox={viewBox}>
+            {featuresPaths.map((item) => {
+              const bairroNome = item.nome
               const count = countsMap.get(bairroNome.trim().toLowerCase()) || 0
               const isClickable = count > 0
 
+              if (!item.d) return null
+
               return (
-                <g
-                  key={idx}
-                  className={isClickable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}
+                <path
+                  key={item.id}
+                  d={item.d}
+                  fillRule="evenodd"
+                  className={
+                    isClickable
+                      ? 'fill-primary/40 stroke-primary hover:fill-primary/70 transition-colors cursor-pointer'
+                      : 'fill-muted/70 stroke-border opacity-60 cursor-not-allowed pointer-events-none'
+                  }
+                  strokeWidth="0.001"
+                  vectorEffect="non-scaling-stroke"
                   onMouseEnter={() => {
                     setHoveredBairro(
                       `${bairroNome}: ${count > 0 ? `${count} imóveis` : 'Sem imóveis'}`,
@@ -149,9 +248,8 @@ export const FeiraBairrosMap: React.FC<FeiraBairrosMapProps> = ({
                     }
                   }}
                 >
-                  {/* Polígono de exemplo adaptado */}
                   <title>{`${bairroNome} (${count} imóveis)`}</title>
-                </g>
+                </path>
               )
             })}
           </svg>

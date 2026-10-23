@@ -14,6 +14,7 @@ import {
 } from '@/services/publicSite'
 import { useSiteConfig } from '@/contexts/SiteConfigContext'
 import { PUBLIC_PROPERTY_TYPE_LABELS } from '@/lib/publicSiteUtils'
+import { ORG_FALLBACK_NAME } from '@/lib/siteBrand'
 import { setFilters as saveFiltersToMemory } from '@/lib/searchMemory'
 import { initCampaignFromUrl } from '@/lib/campaign'
 import { initMarketingScripts } from '@/lib/marketing'
@@ -92,7 +93,7 @@ export const BuscarPage: React.FC = () => {
   const [currentFilters, setCurrentFilters] = useState<FilterValues>(getFilterValuesFromUrl)
 
   // Atualiza título da página
-  const orgName = filterMeta?.organization?.name || 'Imobdigital'
+  const orgName = filterMeta?.organization?.name || ORG_FALLBACK_NAME
   useEffect(() => {
     const prevTitle = document.title
     document.title = `Imóveis para comprar e alugar | ${orgName}`

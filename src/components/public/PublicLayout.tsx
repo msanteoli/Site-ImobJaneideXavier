@@ -14,20 +14,25 @@ import {
   sanitizeTelUrl,
   sanitizeMailtoUrl,
 } from '@/lib/publicSiteUtils'
-import { AlertTriangle, Eye, MapPin, Clock, Phone, Mail } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { MapPin, Clock, Phone, Mail } from 'lucide-react'
 
 /**
  * Itens de menu configuráveis no topo para o site público v2:
  * Cabeçalho: logo, Comprar, Alugar, pílula "Contato". Sem botão "Entrar".
  */
+import { ORG_FALLBACK_NAME } from '@/lib/siteBrand'
+
 export interface HeaderMenuItem {
   label: string
-  actionKey: 'comprar' | 'alugar' | 'contato'
+  actionKey: 'comprar' | 'alugar' | 'contato' | 'sobre'
+  href?: string
 }
 
 export const HEADER_MENU_ITEMS: HeaderMenuItem[] = [
   { label: 'Comprar', actionKey: 'comprar' },
   { label: 'Alugar', actionKey: 'alugar' },
+  { label: 'Sobre', actionKey: 'sobre', href: '/sobre' },
   { label: 'Contato', actionKey: 'contato' },
 ]
 
@@ -54,18 +59,19 @@ interface PublicLayoutProps {
 
 export const PublicLayout: React.FC<PublicLayoutProps> = ({
   children,
-  orgName = 'Imobiliária Janeide Xavier',
+  orgName = ORG_FALLBACK_NAME,
   whatsappEnabled,
   showContactButton = true,
   onSelectPurpose,
   onOpenContact,
   floatingWaClassName,
 }) => {
+  const navigate = useNavigate()
   const [internalContactOpen, setInternalContactOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [cookiePreferencesOpen, setCookiePreferencesOpen] = useState(false)
   const [isWhatsappEnabled, setIsWhatsappEnabled] = useState<boolean>(whatsappEnabled ?? false)
-  const { config: siteConfig, isPreview, isExpiredPreview } = useSiteConfig()
+  const { config: siteConfig } = useSiteConfig()
 
   React.useEffect(() => {
     if (whatsappEnabled !== undefined) {
@@ -98,20 +104,30 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
       if (onSelectPurpose) {
         onSelectPurpose('venda')
       } else {
-        const heroEl = document.getElementById('hero-search-card')
+        const heroEl =
+          document.getElementById('hero-banner-section') ||
+          document.getElementById('hero-search-card')
         if (heroEl) {
           heroEl.scrollIntoView({ behavior: 'smooth' })
+        } else {
+          navigate('/buscar?purpose=venda')
         }
       }
     } else if (item.actionKey === 'alugar') {
       if (onSelectPurpose) {
         onSelectPurpose('locacao')
       } else {
-        const heroEl = document.getElementById('hero-search-card')
+        const heroEl =
+          document.getElementById('hero-banner-section') ||
+          document.getElementById('hero-search-card')
         if (heroEl) {
           heroEl.scrollIntoView({ behavior: 'smooth' })
+        } else {
+          navigate('/buscar?purpose=locacao')
         }
       }
+    } else if (item.actionKey === 'sobre') {
+      navigate('/sobre')
     } else if (item.actionKey === 'contato') {
       handleOpenContactModal()
     }
@@ -141,21 +157,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-primary/20">
-      {/* Faixa de prévia (preview ativo ou expirado) */}
-      {isPreview && (
-        <div className="w-full bg-amber-500/15 border-b border-amber-500/30 text-amber-900 dark:text-amber-200 py-2 px-4 text-xs sm:text-sm font-medium text-center flex items-center justify-center gap-2">
-          <Eye className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-          <span>Prévia do rascunho, ainda não publicado.</span>
-        </div>
-      )}
-      {isExpiredPreview && (
-        <div className="w-full bg-destructive/15 border-b border-destructive/30 text-destructive py-2 px-4 text-xs sm:text-sm font-medium text-center flex items-center justify-center gap-2">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>Prévia expirada. Gere uma nova no sistema.</span>
-        </div>
-      )}
-
-      {/* Cabeçalho: logo, Comprar, Alugar, pílula "Contato". Sem botão "Entrar" */}
+      {/* Cabeçalho: logo, Comprar, Alugar, Sobre, pílula Contato. Sem botão Entrar */}
       <header className="pub-enter-header sticky top-0 z-40 w-full border-b border-border bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="h-20 flex items-center justify-between gap-3 sm:gap-4">

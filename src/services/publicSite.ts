@@ -35,6 +35,7 @@ export interface PublicBannerItem {
   imagem_desktop_url: string
   imagem_celular_url?: string
   destino_slug?: string
+  tipo?: 'lancamento' | 'super_destaque'
 }
 
 export interface PublicHighlightItem {
@@ -198,83 +199,8 @@ export async function getFilters(): Promise<PublicFiltersResponse> {
   return res.json()
 }
 
-const PREVIEW_STORAGE_KEY = 'imobdigital_site_preview_token'
-
-export function getStoredPreviewToken(): string | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const urlParams = new URLSearchParams(window.location.search)
-    const tokenFromUrl = urlParams.get('preview')
-    if (tokenFromUrl && tokenFromUrl.trim()) {
-      sessionStorage.setItem(PREVIEW_STORAGE_KEY, tokenFromUrl.trim())
-      return tokenFromUrl.trim()
-    }
-  } catch {
-    // sessionStorage ou URL inacessível
-  }
-
-  try {
-    const stored = sessionStorage.getItem(PREVIEW_STORAGE_KEY)
-    if (stored && stored.trim()) return stored.trim()
-  } catch {
-    // sessionStorage inacessível
-  }
-
-  return null
-}
-
-export function clearStoredPreviewToken(): void {
-  if (typeof window === 'undefined') return
-  try {
-    sessionStorage.removeItem(PREVIEW_STORAGE_KEY)
-  } catch {
-    // noop
-  }
-}
-
 export async function fetchSiteConfigDetailed(): Promise<SiteConfigLoadResult> {
-  const token = getStoredPreviewToken()
   const baseEndpoint = `${BACKEND}/backend/v1/public/site/config?org=${encodeURIComponent(ORG)}`
-
-  if (token) {
-    try {
-      const previewUrl = `${baseEndpoint}&preview=${encodeURIComponent(token)}`
-      const res = await fetch(previewUrl)
-
-      if (res.status === 401) {
-        clearStoredPreviewToken()
-        // Buscar o conteúdo publicado como fallback
-        let publishedConfig: PublicSiteConfig | null = null
-        try {
-          const pubRes = await fetch(baseEndpoint)
-          if (pubRes.ok) {
-            publishedConfig = await pubRes.json()
-          }
-        } catch {
-          // Falha na rede do publicado
-        }
-        return {
-          config: publishedConfig,
-          isPreview: false,
-          isExpiredPreview: true,
-        }
-      }
-
-      if (res.ok) {
-        const data = (await res.json()) as PublicSiteConfig
-        return {
-          config: {
-            ...data,
-            previa: data.previa ?? true,
-          },
-          isPreview: true,
-          isExpiredPreview: false,
-        }
-      }
-    } catch {
-      // Erro de rede ao buscar preview, tenta publicado
-    }
-  }
 
   try {
     const res = await fetch(baseEndpoint)
@@ -284,7 +210,7 @@ export async function fetchSiteConfigDetailed(): Promise<SiteConfigLoadResult> {
     const data = (await res.json()) as PublicSiteConfig
     return {
       config: data,
-      isPreview: Boolean(data.previa),
+      isPreview: false,
       isExpiredPreview: false,
     }
   } catch {
