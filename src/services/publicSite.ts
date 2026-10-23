@@ -35,6 +35,7 @@ export interface PublicBannerItem {
   imagem_desktop_url: string
   imagem_celular_url?: string
   destino_slug?: string
+  destino_url?: string
   tipo?: 'lancamento' | 'super_destaque'
 }
 
@@ -44,6 +45,7 @@ export interface PublicHighlightItem {
   bairro: string
   preco: string | number
   foto_url?: string | null
+  highlight?: 'comum' | 'destaque' | 'super_destaque'
 }
 
 export interface PublicMapCount {

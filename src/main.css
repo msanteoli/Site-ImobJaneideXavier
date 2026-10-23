@@ -404,6 +404,22 @@
   .animate-spotlight {
     animation: spotlight 2s ease forwards;
   }
+
+  /* Ken Burns: zoom lento de 6s para a imagem de fundo da hero */
+  @keyframes ken-burns {
+    0% {
+      transform: scale(1);
+    }
+    100% {
+      transform: scale(1.08);
+    }
+  }
+
+  .ken-burns {
+    animation: ken-burns 6s ease-out forwards;
+    transform-origin: center center;
+    will-change: transform;
+  }
 }
 
 /* Respeito a prefers-reduced-motion */
@@ -423,6 +439,11 @@
     transform: none !important;
     clip-path: none !important;
     transition: none !important;
+  }
+
+  .ken-burns {
+    animation: none !important;
+    transform: none !important;
   }
 }
 

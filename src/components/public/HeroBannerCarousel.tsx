@@ -146,10 +146,10 @@ export const HeroBannerCarousel: React.FC<HeroBannerCarouselProps> = ({
       onMouseLeave={() => setIsPaused(false)}
       onFocus={() => setIsPaused(true)}
       onBlur={() => setIsPaused(false)}
-      className="relative w-full min-h-[460px] sm:min-h-[520px] lg:min-h-[560px] bg-neutral-900 text-white overflow-hidden flex items-center justify-center"
+      className="relative w-full min-h-[calc(100vh-5rem)] bg-neutral-900 text-white overflow-hidden flex items-center justify-center"
     >
       {/* Camada de Banners ou Fallback */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 overflow-hidden">
         {hasBanners ? (
           banners.map((banner, idx) => {
             const isCurrent = idx === currentBannerIndex
@@ -169,19 +169,22 @@ export const HeroBannerCarousel: React.FC<HeroBannerCarouselProps> = ({
                     <source media="(max-width: 640px)" srcSet={mobileImg} />
                   )}
                   <img
+                    key={
+                      isCurrent ? `img-active-${banner.id || idx}` : `img-idle-${banner.id || idx}`
+                    }
                     src={desktopImg}
                     alt={banner.titulo}
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover ${isCurrent ? 'ken-burns' : ''}`}
                   />
                 </picture>
-                {/* Gradiente escuro para garantir legibilidade dos textos e caixa de busca */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/30" />
+                {/* Gradiente escuro para garantir contraste AA dos textos e caixa de busca */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/55 to-black/40" />
               </div>
             )
           })
         ) : (
           <div className="absolute inset-0 bg-neutral-900">
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/30" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/35" />
           </div>
         )}
       </div>
@@ -231,34 +234,134 @@ export const HeroBannerCarousel: React.FC<HeroBannerCarouselProps> = ({
 
       {/* Conteúdo Central sobreposto: Chamada do Banner + Caixa de busca em pílula */}
       <div className="relative z-20 w-full max-w-4xl mx-auto px-4 sm:px-6 py-12 flex flex-col items-center text-center space-y-6">
-        {hasBanners && banners[currentBannerIndex] && (
-          <div className="space-y-2 max-w-2xl animate-in fade-in duration-300">
-            {banners[currentBannerIndex].tipo === 'lancamento' && (
-              <span className="text-xs uppercase tracking-wider font-semibold text-primary-foreground/90 bg-primary/80 backdrop-blur px-3 py-1 rounded-full inline-block">
-                Lançamento
-              </span>
-            )}
-            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white drop-shadow-md">
-              {banners[currentBannerIndex].titulo}
-            </h1>
-            {banners[currentBannerIndex].subtitulo && (
-              <p className="text-sm sm:text-lg text-white/90 drop-shadow">
-                {banners[currentBannerIndex].subtitulo}
-              </p>
-            )}
-            {/* Destino leva a /lancamentos/:slug. Sem destino, o banner não tem botão */}
-            {banners[currentBannerIndex].destino_slug && (
-              <div className="pt-2">
-                <Link
-                  to={`/lancamentos/${encodeURIComponent(banners[currentBannerIndex].destino_slug!)}`}
-                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-white text-neutral-900 font-semibold text-sm hover:bg-white/90 transition-all min-h-[44px] shadow"
-                >
-                  {banners[currentBannerIndex].texto_botao || 'Conhecer lançamento'}
-                </Link>
+        {hasBanners &&
+          banners[currentBannerIndex] &&
+          (() => {
+            const banner = banners[currentBannerIndex]
+            const isLancamento = banner.tipo === 'lancamento'
+            const isSuperDestaque = banner.tipo === 'super_destaque'
+
+            // Renderização do botão conforme regra:
+            // Super-destaque: leva ao destino_url (Link relativo ou <a> externo). Sem destino_url, sem botão.
+            // Lançamento: leva a /lancamentos/:slug (se tiver destino_slug). Sem destino_slug, sem botão.
+            // Sem destino: não tem botão.
+            const renderButton = () => {
+              if (isSuperDestaque) {
+                const url = banner.destino_url?.trim()
+                if (!url) return null
+                const isExternal = /^https?:\/\//i.test(url)
+                const buttonText = banner.texto_botao || 'Ver imóvel'
+
+                if (isExternal) {
+                  return (
+                    <div className="pt-2">
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-white text-neutral-900 font-semibold text-sm hover:bg-white/90 transition-all min-h-[44px] shadow"
+                      >
+                        {buttonText}
+                      </a>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div className="pt-2">
+                    <Link
+                      to={url}
+                      className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-white text-neutral-900 font-semibold text-sm hover:bg-white/90 transition-all min-h-[44px] shadow"
+                    >
+                      {buttonText}
+                    </Link>
+                  </div>
+                )
+              }
+
+              if (isLancamento) {
+                if (!banner.destino_slug) return null
+                return (
+                  <div className="pt-2">
+                    <Link
+                      to={`/lancamentos/${encodeURIComponent(banner.destino_slug)}`}
+                      className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-white text-neutral-900 font-semibold text-sm hover:bg-white/90 transition-all min-h-[44px] shadow"
+                    >
+                      {banner.texto_botao || 'Conhecer lançamento'}
+                    </Link>
+                  </div>
+                )
+              }
+
+              // Banner genérico ou sem tipo específico: se tiver destino_url ou destino_slug
+              if (banner.destino_url?.trim()) {
+                const url = banner.destino_url.trim()
+                const isExternal = /^https?:\/\//i.test(url)
+                const buttonText = banner.texto_botao || 'Saiba mais'
+                if (isExternal) {
+                  return (
+                    <div className="pt-2">
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-white text-neutral-900 font-semibold text-sm hover:bg-white/90 transition-all min-h-[44px] shadow"
+                      >
+                        {buttonText}
+                      </a>
+                    </div>
+                  )
+                }
+                return (
+                  <div className="pt-2">
+                    <Link
+                      to={url}
+                      className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-white text-neutral-900 font-semibold text-sm hover:bg-white/90 transition-all min-h-[44px] shadow"
+                    >
+                      {buttonText}
+                    </Link>
+                  </div>
+                )
+              }
+
+              if (banner.destino_slug) {
+                return (
+                  <div className="pt-2">
+                    <Link
+                      to={`/lancamentos/${encodeURIComponent(banner.destino_slug)}`}
+                      className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-white text-neutral-900 font-semibold text-sm hover:bg-white/90 transition-all min-h-[44px] shadow"
+                    >
+                      {banner.texto_botao || 'Conhecer lançamento'}
+                    </Link>
+                  </div>
+                )
+              }
+
+              return null
+            }
+
+            return (
+              <div className="space-y-2 max-w-2xl animate-in fade-in duration-300">
+                {isLancamento && (
+                  <span className="text-xs uppercase tracking-wider font-semibold text-primary-foreground/90 bg-primary/80 backdrop-blur px-3 py-1 rounded-full inline-block">
+                    Lançamento
+                  </span>
+                )}
+                {isSuperDestaque && (
+                  <span className="text-xs uppercase tracking-wider font-semibold text-primary-foreground/90 bg-primary/80 backdrop-blur px-3 py-1 rounded-full inline-block">
+                    Destaque
+                  </span>
+                )}
+                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white drop-shadow-md">
+                  {banner.titulo}
+                </h1>
+                {banner.subtitulo && (
+                  <p className="text-sm sm:text-lg text-white/90 drop-shadow">{banner.subtitulo}</p>
+                )}
+                {renderButton()}
               </div>
-            )}
-          </div>
-        )}
+            )
+          })()}
 
         {!hasBanners && (
           <div className="space-y-2 max-w-xl">
