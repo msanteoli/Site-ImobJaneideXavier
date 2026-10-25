@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Building2, ArrowRight } from 'lucide-react'
 import { PublicSiteConfig } from '@/services/publicSite'
 import { Reveal } from '@/components/public/Reveal'
+import { resolveAssetUrl } from '@/lib/publicSiteUtils'
 
 interface SobreSectionProps {
   siteConfig?: PublicSiteConfig | null
@@ -14,6 +15,7 @@ const DEFAULT_LOREM_TEXT =
 export const SobreSection: React.FC<SobreSectionProps> = ({ siteConfig }) => {
   const titulo = siteConfig?.sobre?.titulo?.trim() || 'Sobre a Imobiliária Janeide Xavier'
   const resumo = siteConfig?.sobre?.texto?.trim() || DEFAULT_LOREM_TEXT
+  const imagemUrl = resolveAssetUrl(siteConfig?.sobre?.imagem_url)
 
   return (
     <section
@@ -53,27 +55,38 @@ export const SobreSection: React.FC<SobreSectionProps> = ({ siteConfig }) => {
             </Reveal>
           </div>
 
-          {/* Coluna Direita: Placeholder neutro na proporção 4:5, sem banco de imagem externo */}
+          {/* Coluna Direita: Imagem do organizador ou Placeholder neutro na proporção 4:5 */}
           <div className="lg:col-span-7 w-full">
             <Reveal variant="photo" delay={120}>
-              <div className="relative aspect-[4/5] w-full max-w-lg mx-auto lg:max-w-none rounded-[16px] border border-border bg-card overflow-hidden shadow-sm flex flex-col items-center justify-center p-8 text-center">
-                {/* Textura sutil geométrica e ícone arquitetural neutro */}
-                <div className="w-20 h-20 rounded-full bg-muted/80 border border-border flex items-center justify-center text-muted-foreground mb-4 shadow-inner">
-                  <Building2 className="h-9 w-9 stroke-[1.25]" />
-                </div>
-                <div className="space-y-1.5 max-w-xs">
-                  <span className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
-                    Espaço Editorial
-                  </span>
-                  <p className="text-sm text-muted-foreground/80 font-normal">
-                    Tradição, transparência e excelência no mercado imobiliário
-                  </p>
-                </div>
-                {/* Linhas decorativas sutis nos cantos */}
-                <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-border/80 rounded-tl pointer-events-none" />
-                <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-border/80 rounded-tr pointer-events-none" />
-                <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-border/80 rounded-bl pointer-events-none" />
-                <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-border/80 rounded-br pointer-events-none" />
+              <div className="relative aspect-[4/5] w-full max-w-lg mx-auto lg:max-w-none rounded-[16px] border border-border bg-card overflow-hidden shadow-sm flex flex-col items-center justify-center">
+                {imagemUrl ? (
+                  <img
+                    src={imagemUrl}
+                    alt={titulo}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="p-8 text-center flex flex-col items-center justify-center h-full w-full">
+                    {/* Textura sutil geométrica e ícone arquitetural neutro */}
+                    <div className="w-20 h-20 rounded-full bg-muted/80 border border-border flex items-center justify-center text-muted-foreground mb-4 shadow-inner">
+                      <Building2 className="h-9 w-9 stroke-[1.25]" />
+                    </div>
+                    <div className="space-y-1.5 max-w-xs">
+                      <span className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+                        Espaço Editorial
+                      </span>
+                      <p className="text-sm text-muted-foreground/80 font-normal">
+                        Tradição, transparência e excelência no mercado imobiliário
+                      </p>
+                    </div>
+                    {/* Linhas decorativas sutis nos cantos */}
+                    <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-border/80 rounded-tl pointer-events-none" />
+                    <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-border/80 rounded-tr pointer-events-none" />
+                    <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-border/80 rounded-bl pointer-events-none" />
+                    <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-border/80 rounded-br pointer-events-none" />
+                  </div>
+                )}
               </div>
             </Reveal>
           </div>

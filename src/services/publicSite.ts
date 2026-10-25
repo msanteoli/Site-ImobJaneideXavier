@@ -6,6 +6,7 @@ export interface PublicSiteConfig {
   sobre?: {
     titulo?: string
     texto?: string
+    imagem_url?: string | null
   }
   contato?: {
     endereco?: string
@@ -188,6 +189,9 @@ export interface SubmitLeadPayload {
   gclid?: string
   fbclid?: string
   website?: string
+  intent?: 'captacao' | string
+  owner_address?: string
+  owner_property_type?: string
 }
 
 export interface SubmitLeadResponse {
@@ -404,6 +408,13 @@ export async function submitLead(payload: SubmitLeadPayload): Promise<SubmitLead
   if (payload.gclid) body.gclid = payload.gclid
   if (payload.fbclid) body.fbclid = payload.fbclid
   if (payload.website !== undefined) body.website = payload.website
+  if (payload.intent) body.intent = payload.intent
+  if (payload.owner_address && payload.owner_address.trim()) {
+    body.owner_address = payload.owner_address.trim()
+  }
+  if (payload.owner_property_type && payload.owner_property_type.trim()) {
+    body.owner_property_type = payload.owner_property_type.trim()
+  }
 
   const res = await fetch(url, {
     method: 'POST',

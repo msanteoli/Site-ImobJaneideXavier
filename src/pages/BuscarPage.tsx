@@ -24,6 +24,7 @@ import { HeroBannerCarousel } from '@/components/public/HeroBannerCarousel'
 import { SuperDestaquesPanels } from '@/components/public/SuperDestaquesPanels'
 import { HighlightsSlider } from '@/components/public/HighlightsSlider'
 import { SobreSection } from '@/components/public/SobreSection'
+import { AnuncieBanner } from '@/components/public/AnuncieBanner'
 import { CompactSearchBar } from '@/components/public/CompactSearchBar'
 import { SearchFilterBar, FilterValues } from '@/components/public/SearchFilterBar'
 import { CategoryBar } from '@/components/public/CategoryBar'
@@ -634,8 +635,10 @@ export const BuscarPage: React.FC = () => {
       {/* 5. SEÇÃO SOBRE A IMOBILIÁRIA (Lorem Ipsum conforme spec do dono) */}
       <SobreSection siteConfig={siteConfig} />
 
-      {/* 6. PONTO DE INSERÇÃO: Faixa "Anuncie seu imóvel" (virá na Parte 4) */}
-      <div id="anuncie-seu-imovel-slot" aria-hidden="true" />
+      {/* 6. FAIXA "Anuncie seu imóvel" (Parte 4) */}
+      <div id="anuncie-seu-imovel-slot">
+        <AnuncieBanner />
+      </div>
 
       {/* Painel Completo de Filtros (Sheet no celular com rodapé fixo / Dialog no desktop) */}
       <SearchFilterBar

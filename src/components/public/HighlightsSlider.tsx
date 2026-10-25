@@ -110,7 +110,7 @@ export const HighlightsSlider: React.FC<HighlightsSliderProps> = ({
               <Reveal key={item.codigo} delay={index * 60} className="h-full flex flex-col">
                 <Link
                   to={`/buscar/${encodeURIComponent(item.codigo)}`}
-                  className="group relative w-full h-full bg-card rounded-[16px] border border-border overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="group relative w-full h-full bg-card rounded-[16px] border border-border overflow-hidden shadow-sm hover:shadow-md motion-safe:[@media(hover:hover)]:hover:scale-[1.03] motion-safe:[@media(hover:hover)]:hover:border-primary motion-safe:[@media(hover:hover)]:transition-[transform,border-color,box-shadow] motion-safe:[@media(hover:hover)]:duration-300 flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   {/* Foto alta (proporção 3:4) ocupando o quadro */}
                   <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted flex items-center justify-center">
@@ -118,7 +118,7 @@ export const HighlightsSlider: React.FC<HighlightsSliderProps> = ({
                       <img
                         src={photoUrl}
                         alt={item.titulo}
-                        className="w-full h-full object-cover transition-transform duration-500 ease-out [@media(hover:hover)]:group-hover:scale-[1.04]"
+                        className="w-full h-full object-cover"
                         loading="lazy"
                       />
                     ) : (
