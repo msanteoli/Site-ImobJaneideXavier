@@ -424,6 +424,7 @@ export const ImovelPublicoPage: React.FC = () => {
                   <img
                     src={getFullPhotoUrl(photos[0]) || ''}
                     alt={property.title}
+                    style={{ viewTransitionName: `property-photo-${property.code}` }}
                     className="h-full w-full object-cover group-hover:opacity-95 transition-opacity"
                   />
                 </div>
@@ -494,6 +495,10 @@ export const ImovelPublicoPage: React.FC = () => {
                 <img
                   src={getFullPhotoUrl(photos[mobilePhotoIndex]) || ''}
                   alt={`${property.title} - Foto ${mobilePhotoIndex + 1}`}
+                  style={{
+                    viewTransitionName:
+                      mobilePhotoIndex === 0 ? `property-photo-${property.code}` : undefined,
+                  }}
                   className="h-full w-full object-cover"
                 />
 

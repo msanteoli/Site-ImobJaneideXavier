@@ -13,6 +13,7 @@ interface HeroBannerCarouselProps {
   types: PublicTypeOption[]
   onSearch: (newValues: FilterValues) => void
   onOpenMoreFilters: () => void
+  superDestaqueCodes?: string[]
 }
 
 /**
@@ -55,6 +56,7 @@ export const HeroBannerCarousel: React.FC<HeroBannerCarouselProps> = ({
   types,
   onSearch,
   onOpenMoreFilters,
+  superDestaqueCodes = [],
 }) => {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
@@ -143,6 +145,13 @@ export const HeroBannerCarousel: React.FC<HeroBannerCarouselProps> = ({
             const isCurrent = idx === currentBannerIndex
             const bannerDest = getBannerDestination(banner)
 
+            // Ideia I3: Quando o banner ativo da hero tiver imovel_codigo igual ao code de um painel de super-destaque,
+            // ao rolar da hero até os super-destaques o banner encolhe com scroll-driven animation.
+            // Campanha ou banner sem imovel_codigo correspondente rola normalmente.
+            const isMatchingSuperDestaque = Boolean(
+              banner.imovel_codigo && superDestaqueCodes.includes(banner.imovel_codigo),
+            )
+
             // Dia vs Noite (Ideia I5): no tema escuro, se houver imagem_noite_* use-a; senão use a padrão
             const desktopDay = banner.imagem_desktop_url
             const mobileDay = banner.imagem_celular_url || desktopDay
@@ -157,12 +166,17 @@ export const HeroBannerCarousel: React.FC<HeroBannerCarouselProps> = ({
             )
             const isBannerOnlyImage = !bannerHasTitleOrButton
 
-            // Renderização da imagem com Ken Burns
+            // Renderização da imagem com Ken Burns e suporte a scroll-driven shrink
             const imageElement = (
               <div
-                className="w-full h-full relative"
+                className={`w-full h-full relative ${
+                  isMatchingSuperDestaque && isCurrent ? 'hero-banner-scroll-shrink' : ''
+                }`}
                 style={{
-                  transform: scrollY > 0 ? `translate3d(0, ${scrollY * 0.25}px, 0)` : undefined,
+                  transform:
+                    scrollY > 0 && !isMatchingSuperDestaque
+                      ? `translate3d(0, ${scrollY * 0.25}px, 0)`
+                      : undefined,
                   willChange: 'transform, opacity',
                 }}
               >

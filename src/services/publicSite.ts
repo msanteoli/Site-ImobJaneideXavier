@@ -52,6 +52,25 @@ export interface PublicHighlightItem {
   highlight?: 'comum' | 'destaque' | 'super_destaque'
 }
 
+export interface PublicSuperDestaqueItem {
+  code: string
+  title: string
+  type: string
+  neighborhood: string
+  city: string
+  sale: PriceDetail | null
+  rent: PriceDetail | null
+  cover: string | null
+  photos: string[]
+  own_photos_count?: number
+  landing_url?: string | null
+}
+
+export interface PublicSuperDestaquesResponse {
+  items: PublicSuperDestaqueItem[]
+  total: number
+}
+
 export interface PublicLancamentoDetail {
   titulo: string
   texto?: string
@@ -247,6 +266,21 @@ export async function getSiteHighlights(): Promise<PublicHighlightItem[]> {
     const data = await res.json()
     if (Array.isArray(data)) {
       return data.slice(0, 10)
+    }
+    return []
+  } catch {
+    return []
+  }
+}
+
+export async function getSuperDestaques(): Promise<PublicSuperDestaqueItem[]> {
+  try {
+    const url = `${BACKEND}/backend/v1/public/super-destaques?org=${encodeURIComponent(ORG)}`
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const data: PublicSuperDestaquesResponse = await res.json()
+    if (data && Array.isArray(data.items)) {
+      return data.items
     }
     return []
   } catch {

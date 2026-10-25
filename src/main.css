@@ -496,6 +496,41 @@
     animation: none !important;
     transform: none !important;
   }
+
+  /* Super-destaques: sem alargamento e sem animação scroll-driven em reduced motion */
+  .super-destaque-panel {
+    transition: none !important;
+  }
+
+  .hero-banner-scroll-shrink {
+    animation: none !important;
+  }
+}
+
+/* Scroll-driven animation (Ideia I3): Banner que vira painel */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes banner-shrink-to-panel {
+      from {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+        border-radius: 0;
+      }
+      to {
+        transform: scale(0.68) translateY(12%);
+        opacity: 0.85;
+        border-radius: 16px;
+      }
+    }
+
+    .hero-banner-scroll-shrink {
+      animation: banner-shrink-to-panel linear both;
+      animation-timeline: view(block);
+      animation-range: exit 0% exit 100%;
+      transform-origin: center bottom;
+      will-change: transform, opacity, border-radius;
+    }
+  }
 }
 
 /* Entrada de página do site público */

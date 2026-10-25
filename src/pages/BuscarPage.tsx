@@ -5,10 +5,12 @@ import {
   searchProperties,
   getSiteBanners,
   getSiteHighlights,
+  getSuperDestaques,
   PublicFiltersResponse,
   PublicPropertyListItem,
   PublicBannerItem,
   PublicHighlightItem,
+  PublicSuperDestaqueItem,
 } from '@/services/publicSite'
 import { useSiteConfig } from '@/contexts/SiteConfigContext'
 import { PUBLIC_PROPERTY_TYPE_LABELS } from '@/lib/publicSiteUtils'
@@ -19,6 +21,7 @@ import { initMarketingScripts } from '@/lib/marketing'
 import { PublicLayout } from '@/components/public/PublicLayout'
 import { PropertyCard } from '@/components/public/PropertyCard'
 import { HeroBannerCarousel } from '@/components/public/HeroBannerCarousel'
+import { SuperDestaquesPanels } from '@/components/public/SuperDestaquesPanels'
 import { HighlightsSlider } from '@/components/public/HighlightsSlider'
 import { SobreSection } from '@/components/public/SobreSection'
 import { CompactSearchBar } from '@/components/public/CompactSearchBar'
@@ -38,8 +41,9 @@ export const BuscarPage: React.FC = () => {
   const [filterMeta, setFilterMeta] = useState<PublicFiltersResponse | null>(null)
   const [, setMetaError] = useState<string | null>(null)
 
-  // Dados v2: Banners da Hero e Destaques
+  // Dados v2 e v3: Banners da Hero, Super-destaques e Destaques
   const [banners, setBanners] = useState<PublicBannerItem[]>([])
+  const [superDestaques, setSuperDestaques] = useState<PublicSuperDestaqueItem[]>([])
   const [highlights, setHighlights] = useState<PublicHighlightItem[]>([])
   const { config: siteConfig } = useSiteConfig()
 
@@ -123,6 +127,14 @@ export const BuscarPage: React.FC = () => {
       })
       .catch(() => {
         if (mounted) setBanners([])
+      })
+
+    getSuperDestaques()
+      .then((data) => {
+        if (mounted) setSuperDestaques(data)
+      })
+      .catch(() => {
+        if (mounted) setSuperDestaques([])
       })
 
     getSiteHighlights()
@@ -417,6 +429,7 @@ export const BuscarPage: React.FC = () => {
           types={filterMeta?.types || []}
           onSearch={(newVals) => handleFiltersChange(newVals, true)}
           onOpenMoreFilters={() => setMoreFiltersOpen(true)}
+          superDestaqueCodes={superDestaques.map((item) => item.code)}
         />
       </div>
 
@@ -433,8 +446,12 @@ export const BuscarPage: React.FC = () => {
         />
       )}
 
-      {/* 2. PONTO DE INSERÇÃO: Super-destaques (virá na Parte 3) */}
-      <div id="super-destaques-slot" aria-hidden="true" />
+      {/* 2. SUPER-DESTAQUES (Parte 3) — painéis verticais com transições */}
+      {superDestaques.length > 0 && (
+        <div id="super-destaques-slot">
+          <SuperDestaquesPanels items={superDestaques} />
+        </div>
+      )}
 
       {/* 3. SLIDE DE DESTAQUES (até 10 cartões padronizados, com fallback) */}
       <HighlightsSlider highlights={highlights} fallbackProperties={items} />
