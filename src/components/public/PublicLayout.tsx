@@ -4,6 +4,7 @@ import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { PublicContactModal } from './PublicContactModal'
+import { PublicContactForm } from './PublicContactForm'
 import { CookieBanner } from './CookieBanner'
 import { FloatingWhatsAppButton } from './FloatingWhatsAppButton'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -296,134 +297,182 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
       {/* Botão flutuante de WhatsApp */}
       {isWhatsappEnabled && <FloatingWhatsAppButton className={floatingWaClassName} />}
 
-      {/* Rodapé: contatos, links, redes sociais, copyright, links institucionais */}
-      <footer className="border-t border-border bg-background pt-10 pb-20 px-4 text-sm text-muted-foreground">
-        <div className="max-w-7xl mx-auto space-y-8">
-          {/* Bloco de Contato no rodapé (campos vazios não aparecem) */}
-          {hasContatoAny && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pb-4 border-b border-border/50 text-xs sm:text-sm">
-              {hasEndereco && (
-                <div className="flex items-start gap-2.5">
-                  <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold block text-foreground">Endereço</span>
-                    <span className="text-muted-foreground">{contato!.endereco}</span>
-                  </div>
+      {/* Rodapé escuro nos dois temas (B5), em 2 colunas a partir de 1024px, empilhado no celular */}
+      <footer className="border-t border-border bg-[#0B0A0E] text-white pt-12 sm:pt-16 pb-16 px-4 sm:px-6 text-sm">
+        <div className="max-w-7xl mx-auto space-y-12">
+          {/* Grade de 2 colunas (lg:grid-cols-2) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+            {/* Coluna esquerda: Formulário de contato */}
+            <div className="space-y-4">
+              <div className="space-y-1.5 text-left">
+                <span className="section-label text-neutral-400">Contato</span>
+                <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+                  Fale com a imobiliária
+                </h2>
+                <p className="text-sm text-neutral-400">
+                  Envie sua mensagem e um de nossos corretores entrará em contato.
+                </p>
+              </div>
+
+              <div className="rounded-[16px] border border-white/10 bg-[#15141A] p-5 sm:p-6 text-white shadow-sm">
+                <PublicContactForm variant="footer" />
+              </div>
+            </div>
+
+            {/* Coluna direita: telefone, e-mail, endereço, horário e redes sociais */}
+            <div className="flex flex-col justify-between space-y-8 lg:pl-4">
+              <div className="space-y-6">
+                <div className="space-y-1.5 text-left">
+                  <span className="section-label text-neutral-400">Atendimento</span>
+                  <h3 className="text-xl sm:text-2xl font-semibold tracking-tight text-white">
+                    {orgName}
+                  </h3>
+                  <p className="text-sm text-neutral-400">
+                    Estamos à disposição para ajudar você a encontrar o imóvel ideal.
+                  </p>
                 </div>
-              )}
-              {hasHorario && (
-                <div className="flex items-start gap-2.5">
-                  <Clock className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold block text-foreground">Horário</span>
-                    <span className="text-muted-foreground">{contato!.horario}</span>
-                  </div>
-                </div>
-              )}
-              {rawTelefone && (
-                <div className="flex items-start gap-2.5">
-                  <Phone className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold block text-foreground">Telefone</span>
-                    {telLink ? (
-                      <a
-                        href={telLink}
-                        className="text-foreground hover:underline transition-colors block"
-                      >
-                        {rawTelefone}
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground">{rawTelefone}</span>
+
+                {hasContatoAny && (
+                  <div className="space-y-4 text-sm text-neutral-300">
+                    {hasEndereco && (
+                      <div className="flex items-start gap-3">
+                        <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold block text-white text-xs uppercase tracking-wider">
+                            Endereço
+                          </span>
+                          <span className="text-neutral-300 leading-relaxed">
+                            {contato!.endereco}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {hasHorario && (
+                      <div className="flex items-start gap-3">
+                        <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold block text-white text-xs uppercase tracking-wider">
+                            Horário de Funcionamento
+                          </span>
+                          <span className="text-neutral-300">{contato!.horario}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {rawTelefone && (
+                      <div className="flex items-start gap-3">
+                        <Phone className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold block text-white text-xs uppercase tracking-wider">
+                            Telefone
+                          </span>
+                          {telLink ? (
+                            <a
+                              href={telLink}
+                              className="text-white hover:text-primary transition-colors block"
+                            >
+                              {rawTelefone}
+                            </a>
+                          ) : (
+                            <span className="text-neutral-300">{rawTelefone}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {rawEmail && (
+                      <div className="flex items-start gap-3">
+                        <Mail className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-semibold block text-white text-xs uppercase tracking-wider">
+                            E-mail
+                          </span>
+                          {mailtoLink ? (
+                            <a
+                              href={mailtoLink}
+                              className="text-white hover:text-primary transition-colors block break-all"
+                            >
+                              {rawEmail}
+                            </a>
+                          ) : (
+                            <span className="text-neutral-300 break-all">{rawEmail}</span>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
-              )}
-              {rawEmail && (
-                <div className="flex items-start gap-2.5">
-                  <Mail className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-semibold block text-foreground">E-mail</span>
-                    {mailtoLink ? (
+                )}
+
+                {/* Redes sociais e links adicionais da config */}
+                {(validCustomLinks.length > 0 || instagramUrl || whatsappUrl) && (
+                  <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm font-medium">
+                    {instagramUrl && (
                       <a
-                        href={mailtoLink}
-                        className="text-foreground hover:underline transition-colors block break-all"
+                        href={instagramUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white hover:text-primary transition-colors min-h-[44px] inline-flex items-center py-1 gap-1.5"
                       >
-                        {rawEmail}
+                        <span>Instagram</span>
                       </a>
-                    ) : (
-                      <span className="text-muted-foreground break-all">{rawEmail}</span>
                     )}
+                    {whatsappUrl && (
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white hover:text-primary transition-colors min-h-[44px] inline-flex items-center py-1 gap-1.5"
+                      >
+                        <span>WhatsApp</span>
+                      </a>
+                    )}
+                    {validCustomLinks.map((link, idx) => (
+                      <a
+                        key={idx}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white hover:text-primary transition-colors min-h-[44px] inline-flex items-center py-1"
+                      >
+                        {link.rotulo}
+                      </a>
+                    ))}
                   </div>
+                )}
+              </div>
+
+              {/* Linha de copyright e links institucionais */}
+              <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-400">
+                <p className="text-center sm:text-left leading-normal">
+                  © {new Date().getFullYear()}{' '}
+                  <Link to="/" className="font-medium text-white hover:underline inline">
+                    {orgName}
+                  </Link>
+                  . Todos os direitos reservados.
+                </p>
+                <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-4 gap-y-2">
+                  <Link
+                    to="/sobre"
+                    className="text-neutral-300 hover:text-white underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center px-1"
+                  >
+                    Sobre
+                  </Link>
+                  <Link
+                    to="/privacidade"
+                    className="text-neutral-300 hover:text-white underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center px-1"
+                  >
+                    Política de Privacidade
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setCookiePreferencesOpen(true)}
+                    className="text-neutral-300 hover:text-white underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center px-1"
+                  >
+                    Preferências de cookies
+                  </button>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Links e redes (Instagram, WhatsApp e links adicionais da config) */}
-          {(validCustomLinks.length > 0 || instagramUrl || whatsappUrl) && (
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs sm:text-sm font-medium">
-              {instagramUrl && (
-                <a
-                  href={instagramUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-foreground text-foreground transition-colors min-h-[44px] inline-flex items-center px-2 py-1 gap-1.5"
-                >
-                  <span>Instagram</span>
-                </a>
-              )}
-              {whatsappUrl && (
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-foreground text-foreground transition-colors min-h-[44px] inline-flex items-center px-2 py-1 gap-1.5"
-                >
-                  <span>WhatsApp</span>
-                </a>
-              )}
-              {validCustomLinks.map((link, idx) => (
-                <a
-                  key={idx}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-foreground text-foreground transition-colors min-h-[44px] inline-flex items-center px-2 py-1"
-                >
-                  {link.rotulo}
-                </a>
-              ))}
-            </div>
-          )}
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border/50 pt-4">
-            <p className="text-sm text-muted-foreground leading-normal py-2 text-center sm:text-left">
-              © {new Date().getFullYear()}{' '}
-              <Link to="/" className="font-semibold text-foreground hover:underline inline">
-                {orgName}
-              </Link>
-              . Todos os direitos reservados.
-            </p>
-            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-4 gap-y-2">
-              <Link
-                to="/sobre"
-                className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center px-1"
-              >
-                Sobre
-              </Link>
-              <Link
-                to="/privacidade"
-                className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center px-1"
-              >
-                Política de Privacidade
-              </Link>
-              <button
-                type="button"
-                onClick={() => setCookiePreferencesOpen(true)}
-                className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center px-1"
-              >
-                Preferências de cookies
-              </button>
+              </div>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react'
-import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
+import { useSearchParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import {
   getFilters,
   searchProperties,
@@ -25,16 +25,17 @@ import { HighlightsSlider } from '@/components/public/HighlightsSlider'
 import { SobreSection } from '@/components/public/SobreSection'
 import { FeiraBairrosMap } from '@/components/public/FeiraBairrosMap'
 import { CompactSearchBar } from '@/components/public/CompactSearchBar'
-import { Enter } from '@/components/public/Enter'
 import { SearchFilterBar, FilterValues } from '@/components/public/SearchFilterBar'
 import { CategoryBar } from '@/components/public/CategoryBar'
 import { PublicContactModal } from '@/components/public/PublicContactModal'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { AlertCircle, RotateCcw, X, MessageSquare } from 'lucide-react'
+import { AlertCircle, RotateCcw, X, MessageSquare, ArrowRight } from 'lucide-react'
 
 export const BuscarPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
+  const location = useLocation()
+  const navigate = useNavigate()
 
   // Filtros dinâmicos obtidos de /public/filters
   const [filterMeta, setFilterMeta] = useState<PublicFiltersResponse | null>(null)
@@ -152,7 +153,22 @@ export const BuscarPage: React.FC = () => {
     setCurrentFilters(getFilterValuesFromUrl())
   }, [getFilterValuesFromUrl])
 
-  // Busca imóveis na grade
+  // Regra B1: Distinção entre / sem busca vs. /buscar (ou / com busca ativa na URL)
+  // Verifica se há busca ativa na URL (filtros na URL além da finalidade pura)
+  const isSearchActive = Boolean(
+    searchParams.get('type') ||
+    searchParams.get('neighborhood') ||
+    searchParams.get('bedrooms') ||
+    searchParams.get('parking') ||
+    searchParams.get('min_price') ||
+    searchParams.get('max_price') ||
+    (searchParams.get('sort') && searchParams.get('sort') !== 'recent'),
+  )
+
+  // Em / SEM filtros ativos na URL: NÃO mostra a grade "Imóveis disponíveis"
+  const isHomePageWithoutFilters = location.pathname === '/' && !isSearchActive
+
+  // Busca imóveis na grade (apenas quando não é a home sem filtros, ou para alimentar os destaques)
   useEffect(() => {
     let active = true
     setLoading(true)
@@ -199,17 +215,6 @@ export const BuscarPage: React.FC = () => {
     }
   }, [currentFilters])
 
-  // Verifica se há busca ativa (filtros além da finalidade padrão)
-  const isSearchActive = Boolean(
-    currentFilters.type ||
-    currentFilters.neighborhood ||
-    currentFilters.bedrooms ||
-    currentFilters.parking ||
-    currentFilters.min_price ||
-    currentFilters.max_price ||
-    (currentFilters.sort && currentFilters.sort !== 'recent'),
-  )
-
   // Observa rolagem para exibir barra compacta quando rolar abaixo do hero com busca ativa
   useEffect(() => {
     const handleScroll = () => {
@@ -241,6 +246,7 @@ export const BuscarPage: React.FC = () => {
     if (newValues.max_price) params.set('max_price', newValues.max_price)
     if (newValues.sort && newValues.sort !== 'recent') params.set('sort', newValues.sort)
 
+    // Se estiver em / e fizer uma busca, navega mantendo os filtros
     setSearchParams(params, { replace: true })
     setCurrentFilters(newValues)
 
@@ -440,7 +446,7 @@ export const BuscarPage: React.FC = () => {
         />
       )}
 
-      {/* 4. MAPA DE FEIRA DE SANTANA (condicionado a GeoJSON existente) */}
+      {/* 3. MAPA DE BAIRROS (condicionado a GeoJSON existente) */}
       <FeiraBairrosMap
         mapCounts={mapCounts}
         onSelectNeighborhood={(bairro) => {
@@ -448,154 +454,185 @@ export const BuscarPage: React.FC = () => {
         }}
       />
 
-      {/* Categorias */}
-      <Enter key="cat-bar" step={5}>
-        <CategoryBar
-          types={filterMeta?.types || []}
-          selectedType={currentFilters.type}
-          onSelectType={(newType) => {
-            handleFiltersChange({ ...currentFilters, type: newType }, true)
-          }}
-        />
-      </Enter>
-
-      <div
-        ref={resultsRef}
-        id="resultados"
-        className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6 scroll-mt-[154px] sm:scroll-mt-[154px]"
-      >
-        {/* Título "Imóveis disponíveis" (peso 600) com contagem em texto de apoio */}
-        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-1">
-          <div className="space-y-1">
-            <h2 className="text-xl sm:text-2xl font-semibold text-foreground tracking-tight">
-              Imóveis disponíveis
-            </h2>
-            {!loading && !searchError && (
-              <p className="text-sm text-muted-foreground">
-                {total === 1 ? '1 imóvel disponível' : `${total} imóveis disponíveis`}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Filtros ativos como pílulas removíveis (o "x" com 44 px de toque) */}
-        {activeChips.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <span className="text-xs font-medium text-muted-foreground mr-1">Filtros ativos:</span>
-            {activeChips.map((chip) => (
-              <span
-                key={chip.id}
-                className="inline-flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full text-xs font-medium border border-border bg-card text-foreground shadow-sm"
+      {/* B1. CATÁLOGO / GRADE DE IMÓVEIS:
+          - Em / SEM filtros ativos: NÃO mostra a grade "Imóveis disponíveis"; mostra bloco curto com "Ver todos os imóveis" levando a /buscar.
+          - Em /buscar ou em / com busca ativa: mostra CategoryBar e a grade completa com filtros e paginação.
+      */}
+      {isHomePageWithoutFilters ? (
+        <section
+          aria-label="Ver todos os imóveis"
+          className="w-full py-12 sm:py-16 border-b border-border bg-background"
+        >
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-4">
+            <h3 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
+              Quer ver todas as opções disponíveis?
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Explore o catálogo completo de casas, apartamentos e terrenos para comprar e alugar.
+            </p>
+            <div className="pt-2">
+              <Link
+                to="/buscar"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-all duration-200 min-h-[44px] shadow-sm"
               >
-                <span>{chip.label}</span>
+                <span>Ver todos os imóveis</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <>
+          {/* Categorias */}
+          <CategoryBar
+            types={filterMeta?.types || []}
+            selectedType={currentFilters.type}
+            onSelectType={(newType) => {
+              handleFiltersChange({ ...currentFilters, type: newType }, true)
+            }}
+          />
+
+          <div
+            ref={resultsRef}
+            id="resultados"
+            className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6 scroll-mt-[154px] sm:scroll-mt-[154px]"
+          >
+            {/* Título "Imóveis disponíveis" (peso 600) com contagem em texto de apoio */}
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-1">
+              <div className="space-y-1">
+                <h2 className="text-xl sm:text-2xl font-semibold text-foreground tracking-tight">
+                  Imóveis disponíveis
+                </h2>
+                {!loading && !searchError && (
+                  <p className="text-sm text-muted-foreground">
+                    {total === 1 ? '1 imóvel disponível' : `${total} imóveis disponíveis`}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Filtros ativos como pílulas removíveis (o "x" com 44 px de toque) */}
+            {activeChips.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="text-xs font-medium text-muted-foreground mr-1">
+                  Filtros ativos:
+                </span>
+                {activeChips.map((chip) => (
+                  <span
+                    key={chip.id}
+                    className="inline-flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full text-xs font-medium border border-border bg-card text-foreground shadow-sm"
+                  >
+                    <span>{chip.label}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSingleFilter(chip.id)}
+                      aria-label={`Remover filtro ${chip.label}`}
+                      className="inline-flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </span>
+                ))}
                 <button
                   type="button"
-                  onClick={() => handleRemoveSingleFilter(chip.id)}
-                  aria-label={`Remover filtro ${chip.label}`}
-                  className="inline-flex items-center justify-center w-11 h-11 min-w-[44px] min-h-[44px] rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={handleClearFilters}
+                  className="text-xs font-medium text-muted-foreground hover:text-foreground underline underline-offset-4 ml-2 min-h-[44px] inline-flex items-center px-2"
                 >
-                  <X className="h-4 w-4" />
+                  Limpar todos
                 </button>
-              </span>
-            ))}
-            <button
-              type="button"
-              onClick={handleClearFilters}
-              className="text-xs font-medium text-muted-foreground hover:text-foreground underline underline-offset-4 ml-2 min-h-[44px] inline-flex items-center px-2"
-            >
-              Limpar todos
-            </button>
-          </div>
-        )}
-
-        {/* Mensagem de Erro */}
-        {searchError && (
-          <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-[8px] text-destructive text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 shrink-0" />
-              <span>{searchError}</span>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleFiltersChange(currentFilters)}
-              className="rounded-[8px] shrink-0 min-h-[44px]"
-            >
-              Tentar novamente
-            </Button>
-          </div>
-        )}
-
-        {/* Grade de Resultados ou Esqueleto de Carregamento */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="space-y-3 p-2">
-                <Skeleton className="aspect-[4/3] w-full rounded-[12px]" />
-                <div className="space-y-2 pt-1">
-                  <Skeleton className="h-5 w-3/4 rounded-[8px]" />
-                  <Skeleton className="h-4 w-1/2 rounded-[8px]" />
-                  <Skeleton className="h-4 w-2/3 rounded-[8px]" />
-                  <Skeleton className="h-5 w-1/3 rounded-[8px] mt-2" />
-                </div>
               </div>
-            ))}
-          </div>
-        ) : items.length > 0 ? (
-          <div className="space-y-10">
-            {/* Grade de 1 coluna no celular, 2 em 768 px (md), 3 em 1024 px (lg) e 4 em 1280 px (xl), espaçamento 24 px (gap-6) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {items.map((item) => (
-                <PropertyCard key={item.code} property={item} />
-              ))}
-            </div>
+            )}
 
-            {/* "Mostrar mais" */}
-            {page < totalPages && (
-              <div className="flex justify-center pt-6 pb-4">
+            {/* Mensagem de Erro */}
+            {searchError && (
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-[8px] text-destructive text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 shrink-0" />
+                  <span>{searchError}</span>
+                </div>
                 <Button
                   variant="outline"
-                  onClick={handleLoadMore}
-                  disabled={loadingMore}
-                  className="rounded-full px-8 py-3 text-sm font-medium border-border hover:bg-muted text-foreground min-h-[44px] transition-all"
+                  size="sm"
+                  onClick={() => handleFiltersChange(currentFilters)}
+                  className="rounded-[8px] shrink-0 min-h-[44px]"
                 >
-                  {loadingMore ? 'Carregando mais imóveis...' : 'Mostrar mais'}
+                  Tentar novamente
                 </Button>
               </div>
             )}
-          </div>
-        ) : (
-          /* Estado vazio */
-          <div className="py-20 text-center space-y-4 max-w-md mx-auto">
-            <h3 className="text-xl font-semibold text-foreground tracking-tight">
-              Nenhum imóvel com esses filtros.
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Remova um filtro ou fale com a imobiliária.
-            </p>
-            <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
-              <Button
-                variant="outline"
-                onClick={handleClearFilters}
-                className="rounded-full px-5 py-2.5 text-sm font-medium border-border min-h-[44px]"
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Limpar filtros
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setContactOpen(true)}
-                className="rounded-full px-5 py-2.5 text-sm font-medium border-border min-h-[44px]"
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Falar com a imobiliária
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* 3. SEÇÃO SOBRE A IMOBILIÁRIA (Lorem Ipsum conforme spec do dono) */}
+            {/* Grade de Resultados ou Esqueleto de Carregamento */}
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="space-y-3 p-2">
+                    <Skeleton className="aspect-[4/3] w-full rounded-[12px]" />
+                    <div className="space-y-2 pt-1">
+                      <Skeleton className="h-5 w-3/4 rounded-[8px]" />
+                      <Skeleton className="h-4 w-1/2 rounded-[8px]" />
+                      <Skeleton className="h-4 w-2/3 rounded-[8px]" />
+                      <Skeleton className="h-5 w-1/3 rounded-[8px] mt-2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : items.length > 0 ? (
+              <div className="space-y-10">
+                {/* Grade de 1 coluna no celular, 2 em 768 px (md), 3 em 1024 px (lg) e 4 em 1280 px (xl), espaçamento 24 px (gap-6) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {items.map((item) => (
+                    <PropertyCard key={item.code} property={item} />
+                  ))}
+                </div>
+
+                {/* "Mostrar mais" */}
+                {page < totalPages && (
+                  <div className="flex justify-center pt-6 pb-4">
+                    <Button
+                      variant="outline"
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                      className="rounded-full px-8 py-3 text-sm font-medium border-border hover:bg-muted text-foreground min-h-[44px] transition-all"
+                    >
+                      {loadingMore ? 'Carregando mais imóveis...' : 'Mostrar mais'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Estado vazio */
+              <div className="py-20 text-center space-y-4 max-w-md mx-auto">
+                <h3 className="text-xl font-semibold text-foreground tracking-tight">
+                  Nenhum imóvel com esses filtros.
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Remova um filtro ou fale com a imobiliária.
+                </p>
+                <div className="pt-4 flex flex-wrap items-center justify-center gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={handleClearFilters}
+                    className="rounded-full px-5 py-2.5 text-sm font-medium border-border min-h-[44px]"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Limpar filtros
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setContactOpen(true)}
+                    className="rounded-full px-5 py-2.5 text-sm font-medium border-border min-h-[44px]"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Falar com a imobiliária
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* 4. SEÇÃO SOBRE A IMOBILIÁRIA (Lorem Ipsum conforme spec do dono) */}
       <SobreSection siteConfig={siteConfig} />
 
       {/* Painel Completo de Filtros (Sheet no celular com rodapé fixo / Dialog no desktop) */}

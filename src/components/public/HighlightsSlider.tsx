@@ -91,39 +91,34 @@ export const HighlightsSlider: React.FC<HighlightsSliderProps> = ({
   return (
     <section
       aria-label="Imóveis em destaque"
-      className="w-full bg-muted/40 py-10 sm:py-14 border-b border-border overflow-hidden"
+      className="w-full bg-background py-14 sm:py-20 border-b border-border overflow-hidden"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-6">
-        {/* Cabeçalho da seção */}
-        <div className="space-y-1 text-left">
-          <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
-            Destaques
-          </h2>
-          <p className="text-xs sm:text-sm text-muted-foreground">Imóveis em destaque</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8">
+        {/* Cabeçalho da seção com rótulo numerado B3 */}
+        <div className="space-y-2 text-left">
+          <span className="section-label">01 — Destaques</span>
+          <h2 className="section-title text-foreground">Imóveis selecionados</h2>
         </div>
 
-        {/* Grade de quadros: 1 coluna no celular, 2 em 768 px (md), 3 em 1280 px (xl) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {/* Grade de quadros B3: 4 colunas em 1440px (2xl), 3 em 1024px (lg), 2 em 640px (sm), 1 no celular */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
           {items.map((item, index) => {
             const photoUrl = getFullPhotoUrl(item.foto_url)
+            const itemNumber = String(index + 1).padStart(2, '0')
 
             return (
-              <Reveal key={item.codigo} delay={index * 50} className="h-full flex flex-col">
+              <Reveal key={item.codigo} delay={index * 60} className="h-full flex flex-col">
                 <Link
                   to={`/buscar/${encodeURIComponent(item.codigo)}`}
-                  className="w-full h-full bg-card rounded-[16px] border border-border overflow-hidden shadow-sm hover:shadow-md hover:border-primary/40 transition-all flex flex-col group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="group relative w-full h-full bg-card rounded-[16px] border border-border overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  {/* Foto grande com reveal (.reveal-photo) ao entrar na tela */}
-                  <Reveal
-                    variant="photo"
-                    delay={index * 50}
-                    className="relative aspect-[16/10] w-full overflow-hidden bg-muted flex items-center justify-center"
-                  >
+                  {/* Foto alta (proporção 3:4) ocupando o quadro */}
+                  <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted flex items-center justify-center">
                     {photoUrl ? (
                       <img
                         src={photoUrl}
                         alt={item.titulo}
-                        className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                        className="w-full h-full object-cover transition-transform duration-500 ease-out [@media(hover:hover)]:group-hover:scale-[1.04]"
                         loading="lazy"
                       />
                     ) : (
@@ -132,31 +127,39 @@ export const HighlightsSlider: React.FC<HighlightsSliderProps> = ({
                         <span className="text-xs mt-1 font-medium">Sem foto</span>
                       </div>
                     )}
-                    <div className="absolute top-3 right-3 bg-black/75 backdrop-blur-sm text-white text-[11px] px-2.5 py-0.5 rounded-full font-mono shadow-sm">
-                      Cód. {item.codigo}
-                    </div>
-                  </Reveal>
 
-                  {/* Conteúdo do quadro com altura uniforme */}
-                  <div className="p-5 flex-1 flex flex-col justify-between text-left space-y-3">
-                    <div className="space-y-1">
-                      <h3 className="font-semibold text-base sm:text-lg text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-                        {item.titulo}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
+                    {/* Overlay escuro leve no hover (só em dispositivos com hover) */}
+                    <div className="absolute inset-0 bg-black/0 [@media(hover:hover)]:group-hover:bg-black/35 transition-colors duration-300 pointer-events-none" />
+
+                    {/* Gradiente sutil na base da foto para garantir leitura dos metadados */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
+
+                    {/* Número "01", "02"... no canto superior esquerdo */}
+                    <div className="absolute top-3.5 left-3.5 bg-black/60 backdrop-blur-md text-white text-[12px] font-mono font-medium px-2.5 py-1 rounded-md border border-white/10">
+                      {itemNumber}
+                    </div>
+
+                    {/* Código do imóvel no canto superior direito */}
+                    <div className="absolute top-3.5 right-3.5 bg-black/60 backdrop-blur-md text-white/90 text-[11px] font-mono px-2 py-0.5 rounded-md border border-white/10">
+                      #{item.codigo}
+                    </div>
+
+                    {/* Metadados na base da foto (bairro, título e preço) com contraste AA garantido */}
+                    <div className="absolute inset-x-0 bottom-0 p-4 text-white text-left space-y-1">
+                      <p className="text-[11px] uppercase tracking-wider text-white/80 font-medium truncate">
                         {item.bairro}
                       </p>
-                    </div>
-                    <div className="pt-3 border-t border-border/60 flex items-baseline justify-between">
-                      <div>
-                        <span className="text-xs text-muted-foreground block">Valor</span>
-                        <span className="text-base sm:text-lg font-bold text-foreground tabular">
+                      <h3 className="font-semibold text-base sm:text-lg text-white line-clamp-1 drop-shadow-sm">
+                        {item.titulo}
+                      </h3>
+                      <div className="pt-1 flex items-baseline justify-between">
+                        <span className="text-base sm:text-lg font-bold text-white tabular drop-shadow-sm">
                           {item.preco}
                         </span>
+                        <span className="text-xs font-medium text-white/90 underline underline-offset-2 opacity-90 group-hover:opacity-100 transition-opacity">
+                          Ver detalhes
+                        </span>
                       </div>
-                      <span className="text-xs font-medium text-primary group-hover:underline">
-                        Ver detalhes &rarr;
-                      </span>
                     </div>
                   </div>
                 </Link>
