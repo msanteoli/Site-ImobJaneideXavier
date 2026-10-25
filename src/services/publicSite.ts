@@ -29,14 +29,18 @@ export interface SiteConfigLoadResult {
 
 export interface PublicBannerItem {
   id: string
-  titulo: string
+  titulo?: string
   subtitulo?: string
   texto_botao?: string
   imagem_desktop_url: string
   imagem_celular_url?: string
+  imagem_noite_desktop_url?: string
+  imagem_noite_celular_url?: string
+  link_url?: string
   destino_slug?: string
   destino_url?: string
-  tipo?: 'lancamento' | 'super_destaque'
+  tipo?: 'lancamento' | 'super_destaque' | 'campanha'
+  imovel_codigo?: string
 }
 
 export interface PublicHighlightItem {
@@ -46,11 +50,6 @@ export interface PublicHighlightItem {
   preco: string | number
   foto_url?: string | null
   highlight?: 'comum' | 'destaque' | 'super_destaque'
-}
-
-export interface PublicMapCount {
-  bairro: string
-  quantidade: number
 }
 
 export interface PublicLancamentoDetail {
@@ -248,21 +247,6 @@ export async function getSiteHighlights(): Promise<PublicHighlightItem[]> {
     const data = await res.json()
     if (Array.isArray(data)) {
       return data.slice(0, 10)
-    }
-    return []
-  } catch {
-    return []
-  }
-}
-
-export async function getSiteMapCounts(): Promise<PublicMapCount[]> {
-  try {
-    const url = `${BACKEND}/backend/v1/public/site/map-counts?org=${encodeURIComponent(ORG)}`
-    const res = await fetch(url)
-    if (!res.ok) return []
-    const data = await res.json()
-    if (Array.isArray(data)) {
-      return data
     }
     return []
   } catch {

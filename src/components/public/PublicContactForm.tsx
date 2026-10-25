@@ -328,7 +328,7 @@ export const PublicContactForm: React.FC<PublicContactFormProps> = ({
           value={name}
           onChange={(e) => setName(e.target.value)}
           disabled={loading}
-          className="h-12 rounded-[8px] border-border bg-background text-sm text-foreground placeholder:text-muted-foreground"
+          className="h-12 rounded-[8px] border-border bg-background text-base text-foreground placeholder:text-muted-foreground"
         />
       </div>
 
@@ -345,7 +345,7 @@ export const PublicContactForm: React.FC<PublicContactFormProps> = ({
           value={phone}
           onChange={handlePhoneChange}
           disabled={loading}
-          className="h-12 rounded-[8px] border-border bg-background text-sm text-foreground placeholder:text-muted-foreground"
+          className="h-12 rounded-[8px] border-border bg-background text-base text-foreground placeholder:text-muted-foreground"
         />
       </div>
 
@@ -366,7 +366,7 @@ export const PublicContactForm: React.FC<PublicContactFormProps> = ({
             if (emailError) setEmailError(null)
           }}
           disabled={loading}
-          className={`h-12 rounded-[8px] bg-background text-sm text-foreground placeholder:text-muted-foreground ${
+          className={`h-12 rounded-[8px] bg-background text-base text-foreground placeholder:text-muted-foreground ${
             emailError ? 'border-destructive focus-visible:ring-destructive' : 'border-border'
           }`}
         />

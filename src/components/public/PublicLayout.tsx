@@ -4,7 +4,6 @@ import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { PublicContactModal } from './PublicContactModal'
-import { PublicContactForm } from './PublicContactForm'
 import { CookieBanner } from './CookieBanner'
 import { FloatingWhatsAppButton } from './FloatingWhatsAppButton'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -297,182 +296,183 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
       {/* Botão flutuante de WhatsApp */}
       {isWhatsappEnabled && <FloatingWhatsAppButton className={floatingWaClassName} />}
 
-      {/* Rodapé escuro nos dois temas (B5), em 2 colunas a partir de 1024px, empilhado no celular */}
+      {/* Rodapé escuro nos dois temas: contatos, redes sociais, copyright e links institucionais */}
       <footer className="border-t border-border bg-[#0B0A0E] text-white pt-12 sm:pt-16 pb-16 px-4 sm:px-6 text-sm">
-        <div className="max-w-7xl mx-auto space-y-12">
-          {/* Grade de 2 colunas (lg:grid-cols-2) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
-            {/* Coluna esquerda: Formulário de contato */}
+        <div className="max-w-7xl mx-auto space-y-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
+            {/* Bloco 1: Imobiliária / Atendimento */}
             <div className="space-y-4">
-              <div className="space-y-1.5 text-left">
-                <span className="section-label text-neutral-400">Contato</span>
-                <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
-                  Fale com a imobiliária
-                </h2>
-                <p className="text-sm text-neutral-400">
-                  Envie sua mensagem e um de nossos corretores entrará em contato.
-                </p>
-              </div>
-
-              <div className="rounded-[16px] border border-white/10 bg-[#15141A] p-5 sm:p-6 text-white shadow-sm">
-                <PublicContactForm variant="footer" />
-              </div>
+              <span className="section-label text-neutral-400">Atendimento</span>
+              <h3 className="text-xl sm:text-2xl font-semibold tracking-tight text-white">
+                {orgName}
+              </h3>
+              <p className="text-sm text-neutral-400 leading-relaxed max-w-sm">
+                Estamos à disposição para ajudar você a encontrar o imóvel ideal em Feira de Santana
+                e região.
+              </p>
+              {showContactButton && (
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleOpenContactModal}
+                    className="font-medium text-sm rounded-full border-white/20 hover:bg-white/10 text-white min-h-[44px] px-6"
+                  >
+                    Falar com a imobiliária
+                  </Button>
+                </div>
+              )}
             </div>
 
-            {/* Coluna direita: telefone, e-mail, endereço, horário e redes sociais */}
-            <div className="flex flex-col justify-between space-y-8 lg:pl-4">
-              <div className="space-y-6">
-                <div className="space-y-1.5 text-left">
-                  <span className="section-label text-neutral-400">Atendimento</span>
-                  <h3 className="text-xl sm:text-2xl font-semibold tracking-tight text-white">
-                    {orgName}
-                  </h3>
-                  <p className="text-sm text-neutral-400">
-                    Estamos à disposição para ajudar você a encontrar o imóvel ideal.
-                  </p>
-                </div>
-
-                {hasContatoAny && (
-                  <div className="space-y-4 text-sm text-neutral-300">
-                    {hasEndereco && (
-                      <div className="flex items-start gap-3">
-                        <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <div>
-                          <span className="font-semibold block text-white text-xs uppercase tracking-wider">
-                            Endereço
-                          </span>
-                          <span className="text-neutral-300 leading-relaxed">
-                            {contato!.endereco}
-                          </span>
-                        </div>
+            {/* Bloco 2: Informações de contato */}
+            {hasContatoAny && (
+              <div className="space-y-4">
+                <span className="section-label text-neutral-400">Informações</span>
+                <div className="space-y-3.5 text-sm text-neutral-300">
+                  {hasEndereco && (
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold block text-white text-xs uppercase tracking-wider">
+                          Endereço
+                        </span>
+                        <span className="text-neutral-300 leading-relaxed">
+                          {contato!.endereco}
+                        </span>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {hasHorario && (
-                      <div className="flex items-start gap-3">
-                        <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <div>
-                          <span className="font-semibold block text-white text-xs uppercase tracking-wider">
-                            Horário de Funcionamento
-                          </span>
-                          <span className="text-neutral-300">{contato!.horario}</span>
-                        </div>
+                  {hasHorario && (
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold block text-white text-xs uppercase tracking-wider">
+                          Horário
+                        </span>
+                        <span className="text-neutral-300">{contato!.horario}</span>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {rawTelefone && (
-                      <div className="flex items-start gap-3">
-                        <Phone className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <div>
-                          <span className="font-semibold block text-white text-xs uppercase tracking-wider">
-                            Telefone
-                          </span>
-                          {telLink ? (
-                            <a
-                              href={telLink}
-                              className="text-white hover:text-primary transition-colors block"
-                            >
-                              {rawTelefone}
-                            </a>
-                          ) : (
-                            <span className="text-neutral-300">{rawTelefone}</span>
-                          )}
-                        </div>
+                  {rawTelefone && (
+                    <div className="flex items-start gap-3">
+                      <Phone className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold block text-white text-xs uppercase tracking-wider">
+                          Telefone
+                        </span>
+                        {telLink ? (
+                          <a
+                            href={telLink}
+                            className="text-white hover:text-primary transition-colors block"
+                          >
+                            {rawTelefone}
+                          </a>
+                        ) : (
+                          <span className="text-neutral-300">{rawTelefone}</span>
+                        )}
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {rawEmail && (
-                      <div className="flex items-start gap-3">
-                        <Mail className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <div>
-                          <span className="font-semibold block text-white text-xs uppercase tracking-wider">
-                            E-mail
-                          </span>
-                          {mailtoLink ? (
-                            <a
-                              href={mailtoLink}
-                              className="text-white hover:text-primary transition-colors block break-all"
-                            >
-                              {rawEmail}
-                            </a>
-                          ) : (
-                            <span className="text-neutral-300 break-all">{rawEmail}</span>
-                          )}
-                        </div>
+                  {rawEmail && (
+                    <div className="flex items-start gap-3">
+                      <Mail className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold block text-white text-xs uppercase tracking-wider">
+                          E-mail
+                        </span>
+                        {mailtoLink ? (
+                          <a
+                            href={mailtoLink}
+                            className="text-white hover:text-primary transition-colors block break-all"
+                          >
+                            {rawEmail}
+                          </a>
+                        ) : (
+                          <span className="text-neutral-300 break-all">{rawEmail}</span>
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Redes sociais e links adicionais da config */}
-                {(validCustomLinks.length > 0 || instagramUrl || whatsappUrl) && (
-                  <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:text-sm font-medium">
-                    {instagramUrl && (
-                      <a
-                        href={instagramUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white hover:text-primary transition-colors min-h-[44px] inline-flex items-center py-1 gap-1.5"
-                      >
-                        <span>Instagram</span>
-                      </a>
-                    )}
-                    {whatsappUrl && (
-                      <a
-                        href={whatsappUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white hover:text-primary transition-colors min-h-[44px] inline-flex items-center py-1 gap-1.5"
-                      >
-                        <span>WhatsApp</span>
-                      </a>
-                    )}
-                    {validCustomLinks.map((link, idx) => (
-                      <a
-                        key={idx}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white hover:text-primary transition-colors min-h-[44px] inline-flex items-center py-1"
-                      >
-                        {link.rotulo}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Linha de copyright e links institucionais */}
-              <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-400">
-                <p className="text-center sm:text-left leading-normal">
-                  © {new Date().getFullYear()}{' '}
-                  <Link to="/" className="font-medium text-white hover:underline inline">
-                    {orgName}
-                  </Link>
-                  . Todos os direitos reservados.
-                </p>
-                <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-4 gap-y-2">
-                  <Link
-                    to="/sobre"
-                    className="text-neutral-300 hover:text-white underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center px-1"
-                  >
-                    Sobre
-                  </Link>
-                  <Link
-                    to="/privacidade"
-                    className="text-neutral-300 hover:text-white underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center px-1"
-                  >
-                    Política de Privacidade
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setCookiePreferencesOpen(true)}
-                    className="text-neutral-300 hover:text-white underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center px-1"
-                  >
-                    Preferências de cookies
-                  </button>
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
+
+            {/* Bloco 3: Redes sociais e canais */}
+            <div className="space-y-4">
+              <span className="section-label text-neutral-400">Conecte-se</span>
+              <p className="text-sm text-neutral-400">
+                Acompanhe novidades, novos imóveis e oportunidades exclusivas.
+              </p>
+              {(validCustomLinks.length > 0 || instagramUrl || whatsappUrl) && (
+                <div className="flex flex-col gap-2 pt-1 text-sm font-medium">
+                  {instagramUrl && (
+                    <a
+                      href={instagramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white hover:text-primary transition-colors min-h-[44px] inline-flex items-center gap-2"
+                    >
+                      <span>Instagram</span>
+                    </a>
+                  )}
+                  {whatsappUrl && (
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white hover:text-primary transition-colors min-h-[44px] inline-flex items-center gap-2"
+                    >
+                      <span>WhatsApp</span>
+                    </a>
+                  )}
+                  {validCustomLinks.map((link, idx) => (
+                    <a
+                      key={idx}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white hover:text-primary transition-colors min-h-[44px] inline-flex items-center"
+                    >
+                      {link.rotulo}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Linha de copyright e links institucionais */}
+          <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-400">
+            <p className="text-center sm:text-left leading-normal">
+              © {new Date().getFullYear()}{' '}
+              <Link to="/" className="font-medium text-white hover:underline inline">
+                {orgName}
+              </Link>
+              . Todos os direitos reservados.
+            </p>
+            <div className="flex flex-wrap items-center justify-center sm:justify-end gap-x-4 gap-y-2">
+              <Link
+                to="/sobre"
+                className="text-neutral-300 hover:text-white underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center px-1"
+              >
+                Sobre
+              </Link>
+              <Link
+                to="/privacidade"
+                className="text-neutral-300 hover:text-white underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center px-1"
+              >
+                Política de Privacidade
+              </Link>
+              <button
+                type="button"
+                onClick={() => setCookiePreferencesOpen(true)}
+                className="text-neutral-300 hover:text-white underline underline-offset-4 transition-colors min-h-[44px] inline-flex items-center px-1"
+              >
+                Preferências de cookies
+              </button>
             </div>
           </div>
         </div>

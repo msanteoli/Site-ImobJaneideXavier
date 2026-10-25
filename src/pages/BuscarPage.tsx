@@ -5,12 +5,10 @@ import {
   searchProperties,
   getSiteBanners,
   getSiteHighlights,
-  getSiteMapCounts,
   PublicFiltersResponse,
   PublicPropertyListItem,
   PublicBannerItem,
   PublicHighlightItem,
-  PublicMapCount,
 } from '@/services/publicSite'
 import { useSiteConfig } from '@/contexts/SiteConfigContext'
 import { PUBLIC_PROPERTY_TYPE_LABELS } from '@/lib/publicSiteUtils'
@@ -23,7 +21,6 @@ import { PropertyCard } from '@/components/public/PropertyCard'
 import { HeroBannerCarousel } from '@/components/public/HeroBannerCarousel'
 import { HighlightsSlider } from '@/components/public/HighlightsSlider'
 import { SobreSection } from '@/components/public/SobreSection'
-import { FeiraBairrosMap } from '@/components/public/FeiraBairrosMap'
 import { CompactSearchBar } from '@/components/public/CompactSearchBar'
 import { SearchFilterBar, FilterValues } from '@/components/public/SearchFilterBar'
 import { CategoryBar } from '@/components/public/CategoryBar'
@@ -41,10 +38,9 @@ export const BuscarPage: React.FC = () => {
   const [filterMeta, setFilterMeta] = useState<PublicFiltersResponse | null>(null)
   const [, setMetaError] = useState<string | null>(null)
 
-  // Dados v2: Banners da Hero, Destaques e Mapa
+  // Dados v2: Banners da Hero e Destaques
   const [banners, setBanners] = useState<PublicBannerItem[]>([])
   const [highlights, setHighlights] = useState<PublicHighlightItem[]>([])
-  const [mapCounts, setMapCounts] = useState<PublicMapCount[]>([])
   const { config: siteConfig } = useSiteConfig()
 
   // Lista de imóveis e paginação da grade
@@ -136,12 +132,6 @@ export const BuscarPage: React.FC = () => {
       .catch(() => {
         if (mounted) setHighlights([])
       })
-
-    getSiteMapCounts()
-      .then((data) => {
-        if (mounted) setMapCounts(data)
-      })
-      .catch(() => {})
 
     return () => {
       mounted = false
@@ -418,7 +408,7 @@ export const BuscarPage: React.FC = () => {
       }}
       onOpenContact={() => setContactOpen(true)}
     >
-      {/* 1. HERO COM BANNERS DE LANÇAMENTO E CAIXA DE BUSCA SOBREPOSTA */}
+      {/* 1. HERO COM BANNERS DE LANÇAMENTO E BUSCA EM BOLHA NO CANTO INFERIOR ESQUERDO */}
       <div ref={heroRef}>
         <HeroBannerCarousel
           banners={banners}
@@ -429,9 +419,6 @@ export const BuscarPage: React.FC = () => {
           onOpenMoreFilters={() => setMoreFiltersOpen(true)}
         />
       </div>
-
-      {/* 2. SLIDE DE DESTAQUES (até 10 cartões padronizados, com fallback) */}
-      <HighlightsSlider highlights={highlights} fallbackProperties={items} />
 
       {/* Barra de busca compacta fixa logo abaixo do cabeçalho quando rolar com busca ativa */}
       {showCompactBar && (
@@ -446,18 +433,13 @@ export const BuscarPage: React.FC = () => {
         />
       )}
 
-      {/* 3. MAPA DE BAIRROS (condicionado a GeoJSON existente) */}
-      <FeiraBairrosMap
-        mapCounts={mapCounts}
-        onSelectNeighborhood={(bairro) => {
-          handleFiltersChange({ ...currentFilters, neighborhood: bairro }, true)
-        }}
-      />
+      {/* 2. PONTO DE INSERÇÃO: Super-destaques (virá na Parte 3) */}
+      <div id="super-destaques-slot" aria-hidden="true" />
 
-      {/* B1. CATÁLOGO / GRADE DE IMÓVEIS:
-          - Em / SEM filtros ativos: NÃO mostra a grade "Imóveis disponíveis"; mostra bloco curto com "Ver todos os imóveis" levando a /buscar.
-          - Em /buscar ou em / com busca ativa: mostra CategoryBar e a grade completa com filtros e paginação.
-      */}
+      {/* 3. SLIDE DE DESTAQUES (até 10 cartões padronizados, com fallback) */}
+      <HighlightsSlider highlights={highlights} fallbackProperties={items} />
+
+      {/* 4. BLOCO "VER TODOS OS IMÓVEIS" (quando em / sem busca ativa) ou GRADE DO CATÁLOGO (quando em /buscar ou com busca ativa) */}
       {isHomePageWithoutFilters ? (
         <section
           aria-label="Ver todos os imóveis"
@@ -632,8 +614,11 @@ export const BuscarPage: React.FC = () => {
         </>
       )}
 
-      {/* 4. SEÇÃO SOBRE A IMOBILIÁRIA (Lorem Ipsum conforme spec do dono) */}
+      {/* 5. SEÇÃO SOBRE A IMOBILIÁRIA (Lorem Ipsum conforme spec do dono) */}
       <SobreSection siteConfig={siteConfig} />
+
+      {/* 6. PONTO DE INSERÇÃO: Faixa "Anuncie seu imóvel" (virá na Parte 4) */}
+      <div id="anuncie-seu-imovel-slot" aria-hidden="true" />
 
       {/* Painel Completo de Filtros (Sheet no celular com rodapé fixo / Dialog no desktop) */}
       <SearchFilterBar
