@@ -7,17 +7,21 @@ interface ThemeContextValue {
   theme: ThemePreference
   resolvedTheme: ResolvedTheme
   setTheme: (theme: ThemePreference) => void
+  toggleTheme: () => void
 }
 
-const STORAGE_KEY = 'imobdigital-theme'
+const STORAGE_KEY = 'imob_site_tema'
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 
 function getStoredTheme(): ThemePreference {
   try {
     const item = localStorage.getItem(STORAGE_KEY)
-    if (item === 'light' || item === 'dark' || item === 'auto') {
-      return item
+    if (item === 'claro' || item === 'light') {
+      return 'light'
+    }
+    if (item === 'escuro' || item === 'dark') {
+      return 'dark'
     }
   } catch {
     // localStorage bloqueado ou indisponível
@@ -37,21 +41,73 @@ function getSystemTheme(): ResolvedTheme {
 }
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Versão 2: Tema fixo claro. Nenhuma alternância nem leitura de storage.
+  const [theme, setThemeState] = useState<ThemePreference>(() => getStoredTheme())
+  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme())
+
+  // Acompanha mudanças no prefers-color-scheme do sistema em tempo real
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = (e: MediaQueryListEvent) => {
+      setSystemTheme(e.matches ? 'dark' : 'light')
+    }
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange)
+      return () => mediaQuery.removeEventListener('change', handleChange)
+    } else if (mediaQuery.addListener) {
+      mediaQuery.addListener(handleChange)
+      return () => mediaQuery.removeListener(handleChange)
+    }
+  }, [])
+
+  const resolvedTheme: ResolvedTheme = theme === 'auto' ? systemTheme : theme
+
+  // Aplica classe no <html> conforme tema resolvido
   useEffect(() => {
     try {
-      document.documentElement.classList.remove('dark')
+      const root = document.documentElement
+      if (resolvedTheme === 'dark') {
+        root.classList.add('dark')
+      } else {
+        root.classList.remove('dark')
+      }
     } catch {
       // noop
     }
-  }, [])
+  }, [resolvedTheme])
+
+  const setTheme = (newTheme: ThemePreference) => {
+    setThemeState(newTheme)
+    try {
+      if (newTheme === 'auto') {
+        localStorage.removeItem(STORAGE_KEY)
+      } else if (newTheme === 'dark') {
+        localStorage.setItem(STORAGE_KEY, 'escuro')
+      } else if (newTheme === 'light') {
+        localStorage.setItem(STORAGE_KEY, 'claro')
+      }
+    } catch {
+      // Falha ao gravar no localStorage ignorada
+    }
+  }
+
+  const toggleTheme = () => {
+    if (resolvedTheme === 'dark') {
+      setTheme('light')
+    } else {
+      setTheme('dark')
+    }
+  }
 
   return (
     <ThemeContext.Provider
       value={{
-        theme: 'light',
-        resolvedTheme: 'light',
-        setTheme: () => {},
+        theme,
+        resolvedTheme,
+        setTheme,
+        toggleTheme,
       }}
     >
       {children}

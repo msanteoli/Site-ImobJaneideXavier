@@ -27,10 +27,40 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Inter', 'system-ui', 'sans-serif'],
+        sans: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"SF Pro Text"',
+          '"SF Pro Display"',
+          '"Segoe UI"',
+          'Roboto',
+          '"Helvetica Neue"',
+          'Arial',
+          'sans-serif',
+        ],
+        display: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"SF Pro Text"',
+          '"SF Pro Display"',
+          '"Segoe UI"',
+          'Roboto',
+          '"Helvetica Neue"',
+          'Arial',
+          'sans-serif',
+        ],
       },
       fontSize: {
+        'hero-title': [
+          'var(--font-hero-title)',
+          { lineHeight: '0.95', letterSpacing: '0.02em', fontWeight: '600' },
+        ],
+        'section-title': [
+          'var(--font-section-title)',
+          { lineHeight: '1.05', letterSpacing: '-0.01em', fontWeight: '600' },
+        ],
+        'section-label': ['11px', { lineHeight: '1.2', letterSpacing: '0.2em', fontWeight: '600' }],
+        caption: ['11px', { lineHeight: '1.4' }],
         'display-sm': [
           'var(--font-display-sm)',
           { lineHeight: 'var(--lh-display-sm)', letterSpacing: '-0.02em', fontWeight: '500' },

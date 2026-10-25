@@ -17,6 +17,19 @@
       content="Casas, apartamentos e terrenos para comprar ou alugar em Feira de Santana."
     />
     <meta property="og:image" content="/og-image.png" />
+    <script>
+      (function() {
+        try {
+          var stored = localStorage.getItem('imob_site_tema');
+          var useDark = stored === 'escuro' || (!stored && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (useDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
 
   <body>

@@ -69,19 +69,21 @@ export const SiteConfigProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [state.config?.favicon_url])
 
-  // Aplicação da cor primária (--primary e --primary-foreground)
+  // Aplicação da cor primária (--primary, --primary-foreground e --ring)
+  // Sem cor_acao, o padrão é o dourado #A99961
   useEffect(() => {
-    if (state.config?.cor_acao) {
-      const hslResult = hexToHslValues(state.config.cor_acao)
-      if (hslResult) {
-        document.documentElement.style.setProperty('--primary', hslResult.primaryHsl)
-        document.documentElement.style.setProperty('--primary-foreground', hslResult.foregroundHsl)
-        document.documentElement.style.setProperty('--ring', hslResult.primaryHsl)
-        return () => {
-          document.documentElement.style.removeProperty('--primary')
-          document.documentElement.style.removeProperty('--primary-foreground')
-          document.documentElement.style.removeProperty('--ring')
-        }
+    const rawColor = state.config?.cor_acao?.trim()
+    const colorToApply = rawColor || '#A99961'
+    const hslResult = hexToHslValues(colorToApply)
+
+    if (hslResult) {
+      document.documentElement.style.setProperty('--primary', hslResult.primaryHsl)
+      document.documentElement.style.setProperty('--primary-foreground', hslResult.foregroundHsl)
+      document.documentElement.style.setProperty('--ring', hslResult.primaryHsl)
+      return () => {
+        document.documentElement.style.removeProperty('--primary')
+        document.documentElement.style.removeProperty('--primary-foreground')
+        document.documentElement.style.removeProperty('--ring')
       }
     }
   }, [state.config?.cor_acao])

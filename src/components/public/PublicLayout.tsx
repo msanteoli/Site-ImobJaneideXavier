@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { PublicContactModal } from './PublicContactModal'
 import { CookieBanner } from './CookieBanner'
 import { FloatingWhatsAppButton } from './FloatingWhatsAppButton'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { getFilters, PublicFiltersResponse } from '@/services/publicSite'
 import { useSiteConfig } from '@/contexts/SiteConfigContext'
 import {
@@ -179,7 +180,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
               </Link>
             </div>
 
-            {/* No desktop (a partir de md): Comprar, Alugar e a pílula Contato */}
+            {/* No desktop (a partir de md): Comprar, Alugar, Sobre, pílula Contato e ThemeToggle */}
             <nav
               className="hidden md:flex items-center gap-2 lg:gap-3 shrink-0"
               aria-label="Menu principal"
@@ -213,6 +214,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
                   </button>
                 )
               })}
+              <ThemeToggle className="ml-1" />
             </nav>
 
             {/* No celular: botão de menu à direita */}
@@ -279,6 +281,11 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
                 )
               })}
             </nav>
+
+            <div className="pt-4 border-t border-border flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Alternar tema</span>
+              <ThemeToggle />
+            </div>
           </div>
         </SheetContent>
       </Sheet>
