@@ -42,9 +42,10 @@ screenshot.png
 .eslintcache
 .oxlintcache
 
-# Environment variables
-.env*
-!.env
+# Environment variables (o .env carrega as URLs do projeto e nao entra no repositorio;
+# os valores vivem nas variaveis do Skip)
+.env
+.env.*
 
 # Linux kernel core dumps (e.g. when oxfmt or pnpm crash)
 core.[0-9]*
